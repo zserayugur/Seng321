@@ -1,6 +1,7 @@
 <?php
 $page = 'cefr';
-require_once 'includes/header.php';
+$path_prefix = '../';
+require_once '../includes/header.php';
 
 // Prediction Logic (Mock)
 $predicted_ielts = "";
@@ -83,4 +84,4 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </section>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

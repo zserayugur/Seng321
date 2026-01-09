@@ -1,6 +1,7 @@
 <?php
 $page = 'review';
-require_once 'includes/header.php';
+$path_prefix = '../';
+require_once '../includes/header.php';
 
 $test_name = isset($_GET['test']) ? htmlspecialchars($_GET['test']) : "General Knowledge Quiz";
 ?>
@@ -87,4 +88,4 @@ $test_name = isset($_GET['test']) ? htmlspecialchars($_GET['test']) : "General K
     </div>
 </section>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

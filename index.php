@@ -40,8 +40,8 @@ $streak_days = $profile['streak_days'];
     <section class="card">
         <h2>Quick Actions</h2>
         <div style="display: flex; flex-direction: column; gap: 10px;">
-            <a href="todo.php" class="btn btn-primary" style="text-align: center;">View To-Do List</a>
-            <a href="cefr.php" class="btn" style="background: rgba(255,255,255,0.1); text-align: center;">Check
+            <a href="pages/todo.php" class="btn btn-primary" style="text-align: center;">View To-Do List</a>
+            <a href="pages/cefr.php" class="btn" style="background: rgba(255,255,255,0.1); text-align: center;">Check
                 Level</a>
         </div>
     </section>
@@ -86,7 +86,7 @@ $streak_days = $profile['streak_days'];
             <span class="badge badge-b2">High Priority</span>
         </div>
         <div style="margin-top: 15px; text-align: center;">
-            <a href="todo.php" style="color: var(--accent-color); font-size: 0.9rem;">View All Tasks &rarr;</a>
+            <a href="pages/todo.php" style="color: var(--accent-color); font-size: 0.9rem;">View All Tasks &rarr;</a>
         </div>
     </section>
 </div>

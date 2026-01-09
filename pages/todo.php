@@ -50,7 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-require_once 'includes/header.php';
+$path_prefix = '../';
+require_once '../includes/header.php';
 
 // Check if we are in edit mode
 $editHeader = "Add New Task";
@@ -148,4 +149,4 @@ if (isset($_GET['edit'])) {
     </section>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

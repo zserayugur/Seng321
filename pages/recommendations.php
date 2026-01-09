@@ -1,6 +1,7 @@
 <?php
 $page = 'ai';
-require_once 'includes/header.php';
+$path_prefix = '../';
+require_once '../includes/header.php';
 ?>
 
 <div style="text-align: center; margin-bottom: 40px;">
@@ -93,4 +94,4 @@ require_once 'includes/header.php';
     </section>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

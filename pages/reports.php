@@ -1,8 +1,9 @@
 <?php
 $page = 'reports';
-require_once 'includes/header.php';
+$path_prefix = '../';
+require_once '../includes/header.php';
 
-require_once 'includes/mock_data.php';
+require_once '../includes/mock_data.php';
 
 // Mock Data for Previous Results
 $results = getTestResults();
@@ -51,7 +52,8 @@ $results = getTestResults();
                             <?php echo $row['test']; ?>
                         </td>
                         <td style="padding: 12px; color: var(--accent-color);">
-                            <?php echo $row['score'] . '/' . $row['max_score']; ?></td>
+                            <?php echo $row['score'] . '/' . $row['max_score']; ?>
+                        </td>
                         <td style="padding: 12px;"><span class="badge badge-b1">
                                 <?php echo $row['level']; ?>
                             </span></td>
@@ -120,4 +122,4 @@ $results = getTestResults();
     });
 </script>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>
