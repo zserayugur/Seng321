@@ -1,4 +1,5 @@
-<?php require_once __DIR__ . "/../includes/admin_guard.php"; ?>
+<?php require_once __DIR__ . "/../includes/admin_guard.php";
+      require_once __DIR__ . "/../includes/header.php"; ?>
 <!doctype html>
 <html>
 <head><meta charset="utf-8"><title>Admin Dashboard</title></head>
@@ -14,3 +15,6 @@
 </ul>
 </body>
 </html>
+<?php
+require_once __DIR__ . "/../includes/footer.php";
+?>

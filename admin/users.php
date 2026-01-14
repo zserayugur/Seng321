@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . "/../includes/admin_guard.php";
 require_once __DIR__ . "/../config/db.php";
+require_once __DIR__ . "/../includes/header.php";
 
 $users = $pdo->query("SELECT id,name,email,role,active,created_at FROM users ORDER BY id DESC")->fetchAll();
 ?>
@@ -33,3 +34,6 @@ $users = $pdo->query("SELECT id,name,email,role,active,created_at FROM users ORD
 </table>
 </body>
 </html>
+<?php
+require_once __DIR__ . "/../includes/footer.php";
+?>

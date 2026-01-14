@@ -1,5 +1,5 @@
-<?php require_once __DIR__ . "/../includes/admin_guard.php"; ?>
-<!doctype html>
+<?php require_once __DIR__ . "/../includes/admin_guard.php";
+      require_once __DIR__ . "/../includes/header.php"; ?>
 <html>
 <head><meta charset="utf-8"><title>System Monitoring</title></head>
 <body>
@@ -12,3 +12,6 @@
 <p><a href="/language-platform/admin/dashboard.php">Back</a></p>
 </body>
 </html>
+<?php
+require_once __DIR__ . "/../includes/footer.php";
+?>

@@ -1,3 +1,17 @@
+
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Login</title></head>
+<body>
+<h2>Login</h2>
+<?php if ($error) echo "<p style='color:red;'>$error</p>"; ?>
+<form method="post">
+  <input name="email" placeholder="email" required><br><br>
+  <input name="password" type="password" placeholder="password" required><br><br>
+  <button type="submit">Login</button>
+</form>
+</body>
+</html>
 <?php
 require_once __DIR__ . "/../config/db.php";
 session_start();
@@ -15,6 +29,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   if (!$u || (int)$u["active"] !== 1 || !password_verify($password, $u["password_hash"])) {
     $error = "Invalid credentials.";
   } else {
+    
+    session_regenerate_id(true);
+
     $_SESSION["user"] = [
       "id" => $u["id"],
       "name" => $u["name"],
@@ -26,16 +43,3 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   }
 }
 ?>
-<!doctype html>
-<html>
-<head><meta charset="utf-8"><title>Login</title></head>
-<body>
-<h2>Login</h2>
-<?php if ($error) echo "<p style='color:red;'>$error</p>"; ?>
-<form method="post">
-  <input name="email" placeholder="email" required><br><br>
-  <input name="password" type="password" placeholder="password" required><br><br>
-  <button type="submit">Login</button>
-</form>
-</body>
-</html>
