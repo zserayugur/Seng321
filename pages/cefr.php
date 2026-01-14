@@ -1,23 +1,17 @@
 <?php
 $page = 'cefr';
 $path_prefix = '../';
+$_SERVER['REQUEST_METHOD'] === 'POST' ? $user_input_score = intval($_POST['score']) : $user_input_score = "";
 require_once '../includes/header.php';
+require_once '../includes/mock_data.php';
 
-// Prediction Logic (Mock)
-$predicted_ielts = "";
-$predicted_toefl = "";
-$user_input_score = "";
+$profile = getUserProfile();
+$current_level = $profile['current_level'];
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $user_input_score = intval($_POST['score']);
-    // Simple mock logic: Score / 10 roughly
-    $predicted_ielts = number_format(($user_input_score / 12), 1);
-    if ($predicted_ielts > 9)
-        $predicted_ielts = 9.0;
-
-    $predicted_toefl = intval($user_input_score * 1.2);
-    if ($predicted_toefl > 120)
-        $predicted_toefl = 120;
+// Helper to check active level for chart
+function isLevel($lvl, $current)
+{
+    return $lvl === $current;
 }
 ?>
 
@@ -29,58 +23,73 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <h2>Your CEFR Journey</h2>
         <div
             style="display: flex; justify-content: space-between; align-items: flex-end; height: 150px; padding-top: 20px;">
-            <div
-                style="width: 15%; background: var(--border-color); height: 20%; border-radius: 8px 8px 0 0; text-align: center; padding-top: 5px;">
-                A1</div>
-            <div
-                style="width: 15%; background: var(--border-color); height: 35%; border-radius: 8px 8px 0 0; text-align: center; padding-top: 5px;">
-                A2</div>
-            <div
-                style="width: 15%; background: var(--primary-color); height: 50%; border-radius: 8px 8px 0 0; text-align: center; padding-top: 5px; box-shadow: 0 0 15px var(--primary-color);">
-                B1</div>
-            <div
-                style="width: 15%; background: var(--border-color); height: 65%; border-radius: 8px 8px 0 0; text-align: center; padding-top: 5px;">
-                B2</div>
-            <div
-                style="width: 15%; background: var(--border-color); height: 80%; border-radius: 8px 8px 0 0; text-align: center; padding-top: 5px;">
-                C1</div>
-            <div
-                style="width: 15%; background: var(--border-color); height: 95%; border-radius: 8px 8px 0 0; text-align: center; padding-top: 5px;">
-                C2</div>
+            <?php
+            $levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+            $heights = [20, 35, 50, 65, 80, 95];
+            foreach ($levels as $index => $lvl):
+                $isActive = isLevel($lvl, $current_level);
+                $bg = $isActive ? 'var(--primary-color)' : 'var(--border-color)';
+                $shadow = $isActive ? '0 0 15px var(--primary-color)' : 'none';
+                $scale = $isActive ? 'transform: scale(1.1);' : '';
+                ?>
+                <div
+                    style="width: 15%; background: <?php echo $bg; ?>; height: <?php echo $heights[$index]; ?>%; border-radius: 8px 8px 0 0; text-align: center; padding-top: 5px; box-shadow: <?php echo $shadow; ?>; <?php echo $scale; ?> transition: all 0.3s ease;">
+                    <?php echo $lvl; ?>
+                </div>
+            <?php endforeach; ?>
         </div>
-        <p style="margin-top: 20px; color: var(--text-muted);">You are currently at <strong>Level B1
-                (Intermediate)</strong>. Your AI assessment suggests you are ready to tackle B2 material.</p>
+        <p style="margin-top: 20px; color: var(--text-muted);">
+            System Classification: You are currently at <strong
+                style="color: var(--primary-color); font-size: 1.2rem;"><?php echo $current_level; ?>
+                (Intermediate)</strong>.
+            <br>
+            <span style="font-size: 0.9rem;">(Based on your last 5 assessment results)</span>
+        </p>
     </section>
 
     <!-- Score Prediction Module -->
     <section class="card">
-        <h2>IELTS / TOEFL Predictor</h2>
-        <p style="font-size: 0.9rem; margin-bottom: 15px;">Enter your latest internal diagnostic score (0-100) to see
-            your estimated international exam scores.</p>
+        <h2>International Exam Equivalence</h2>
+        <p style="font-size: 0.9rem; margin-bottom: 25px;">
+            Based on your current CEFR level (<?php echo $current_level; ?>) and diagnostic performance, here are your
+            estimated scores:
+        </p>
 
-        <form method="POST" action="">
-            <input type="number" name="score" placeholder="Enter Diagnostic Score (0-100)" min="0" max="100" required
-                value="<?php echo $user_input_score; ?>">
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Predict Scores</button>
-        </form>
-
-        <?php if ($predicted_ielts): ?>
-            <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                <h3 style="margin-bottom: 10px; font-size: 1rem;">Prediction Results:</h3>
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div
+                style="padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 4px solid var(--accent-color);">
                 <div class="stat-row">
-                    <span>IELTS Band:</span>
-                    <span style="color: var(--accent-color); font-weight: bold;">
-                        <?php echo $predicted_ielts; ?>
+                    <span>IELTS Band Prediction:</span>
+                    <span style="color: var(--accent-color); font-weight: bold; font-size: 1.5rem;">
+                        <?php echo $profile['ielts_estimate']; ?>
                     </span>
                 </div>
-                <div class="stat-row">
-                    <span>TOEFL iBT:</span>
-                    <span style="color: var(--secondary-color); font-weight: bold;">
-                        <?php echo $predicted_toefl; ?>
-                    </span>
+                <div style="height: 6px; background: #334155; border-radius: 3px; margin-top: 10px;">
+                    <div
+                        style="width: <?php echo ($profile['ielts_estimate'] / 9) * 100; ?>%; height: 100%; background: var(--accent-color); border-radius: 3px;">
+                    </div>
                 </div>
             </div>
-        <?php endif; ?>
+
+            <div
+                style="padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+                <div class="stat-row">
+                    <span>TOEFL iBT Prediction:</span>
+                    <span style="color: var(--secondary-color); font-weight: bold; font-size: 1.5rem;">
+                        <?php echo $profile['toefl_estimate']; ?>
+                    </span>
+                </div>
+                <div style="height: 6px; background: #334155; border-radius: 3px; margin-top: 10px;">
+                    <div
+                        style="width: <?php echo ($profile['toefl_estimate'] / 120) * 100; ?>%; height: 100%; background: var(--secondary-color); border-radius: 3px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p style="margin-top: 20px; font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+            *Estimates are updated automatically after every major assessment.
+        </p>
     </section>
 </div>
 
