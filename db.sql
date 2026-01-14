@@ -73,3 +73,51 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+
+CREATE TABLE IF NOT EXISTS assessment_attempts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  type ENUM('listening','speaking','writing') NOT NULL,
+  part TINYINT NULL,
+  status ENUM('in_progress','submitted','evaluated') NOT NULL DEFAULT 'in_progress',
+  started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  submitted_at DATETIME NULL,
+  duration_seconds INT NOT NULL,
+  meta_json JSON NULL,
+  INDEX(user_id),
+  INDEX(type, part)
+);
+
+CREATE TABLE IF NOT EXISTS assessment_answers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  attempt_id INT NOT NULL,
+  question_index INT NOT NULL,
+  question_text TEXT NULL,
+  answer_text LONGTEXT NULL,
+  is_correct TINYINT NULL,
+  correct_answer TEXT NULL,
+  explanation TEXT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (attempt_id) REFERENCES assessment_attempts(id) ON DELETE CASCADE,
+  UNIQUE KEY uniq_attempt_q (attempt_id, question_index)
+);
+
+CREATE TABLE IF NOT EXISTS assessment_uploads (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  attempt_id INT NOT NULL,
+  kind ENUM('speaking_audio') NOT NULL,
+  file_path VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(64) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (attempt_id) REFERENCES assessment_attempts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ai_results (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  attempt_id INT NOT NULL,
+  model VARCHAR(64) NOT NULL,
+  result_json JSON NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (attempt_id) REFERENCES assessment_attempts(id) ON DELETE CASCADE
+);
