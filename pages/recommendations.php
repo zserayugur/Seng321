@@ -2,6 +2,10 @@
 $page = 'ai';
 $path_prefix = '../';
 require_once '../includes/header.php';
+require_once '../includes/ai_service.php'; // AI Service Dahil Edildi
+
+// AI Verilerini Çek (API Key varsa ChatGPT'den, yoksa Mock'tan)
+$aiData = fetchAIRecommendationsFromChatGPT();
 ?>
 
 <div style="text-align: center; margin-bottom: 40px;">
@@ -22,13 +26,11 @@ require_once '../includes/header.php';
         </div>
         <h2>Diagnostic Insight</h2>
         <p style="font-size: 1.1rem; line-height: 1.8;">
-            Based on your last <strong>3 tests</strong>, our AI has detected a pattern. You are excelling in <strong
-                style="color: var(--success);">Reading Comprehension</strong> but struggling slightly with <strong
-                style="color: var(--warning);">Past Perfect Continuous</strong> tense in Speaking.
+            <?php echo $aiData['insight_text']; ?>
         </p>
         <div
             style="margin-top: 20px; padding: 15px; background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--accent-color); border-radius: 4px;">
-            <strong>Focus Area:</strong> Grammar & Fluency
+            <strong>Focus Area:</strong> <?php echo $aiData['focus_area']; ?>
         </div>
     </section>
 
@@ -37,9 +39,7 @@ require_once '../includes/header.php';
         <h2>Today's AI Plan (Personalized)</h2>
         <ul style="margin-top: 10px;">
             <?php
-            require_once '../includes/mock_data.php';
-            $recs = getAiRecommendations();
-            foreach ($recs as $rec):
+            foreach ($aiData['daily_plan'] as $rec):
                 $color = 'var(--text-muted)';
                 if ($rec['priority'] == 'High')
                     $color = 'var(--danger)';
@@ -82,30 +82,28 @@ require_once '../includes/header.php';
     <section class="card grid-col-2">
         <h2>Recommended Resources</h2>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-            <div
-                style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <?php foreach ($aiData['resources'] as $res): ?>
+                <?php
+                // Badge color logic
+                $badgeClass = 'badge-b1'; // default
+                if (stripos($res['type'], 'Quiz') !== false)
+                    $badgeClass = 'badge-a1';
+                if (stripos($res['type'], 'Video') !== false)
+                    $badgeClass = 'badge-b2';
+                ?>
                 <div
-                    style="height: 100px; background: #334155; border-radius: 4px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; color: #64748b;">
-                    Thumbnail</div>
-                <h3 style="font-size: 1rem; margin-bottom: 5px;">Advanced Grammar Guide</h3>
-                <span class="badge badge-b2">Article</span>
-            </div>
-            <div
-                style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <div
-                    style="height: 100px; background: #334155; border-radius: 4px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; color: #64748b;">
-                    Thumbnail</div>
-                <h3 style="font-size: 1rem; margin-bottom: 5px;">BBC Learning English</h3>
-                <span class="badge badge-b2">Video</span>
-            </div>
-            <div
-                style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <div
-                    style="height: 100px; background: #334155; border-radius: 4px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; color: #64748b;">
-                    Thumbnail</div>
-                <h3 style="font-size: 1rem; margin-bottom: 5px;">IELTS Mock Test 4</h3>
-                <span class="badge badge-a1">Quiz</span>
-            </div>
+                    style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div
+                        style="height: 100px; background: #334155; border-radius: 4px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; color: #64748b;">
+                        Thumbnail
+                    </div>
+                    <h3 style="font-size: 1rem; margin-bottom: 5px;"><?php echo $res['title']; ?></h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
+                        <?php echo isset($res['description']) ? $res['description'] : ''; ?>
+                    </p>
+                    <span class="badge <?php echo $badgeClass; ?>"><?php echo $res['type']; ?></span>
+                </div>
+            <?php endforeach; ?>
         </div>
     </section>
 </div>
