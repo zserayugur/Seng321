@@ -29,6 +29,10 @@ if (!isset($path_prefix)) { $path_prefix = ''; }
                     <li><a href="<?php echo $path_prefix; ?>pages/reports.php" class="<?php echo ($page == 'reports') ? 'active' : ''; ?>">Reports & Analytics</a></li>
                     <li><a href="<?php echo $path_prefix; ?>pages/todo.php" class="<?php echo ($page == 'todo') ? 'active' : ''; ?>">To-Do List</a></li>
                     <li><a href="<?php echo $path_prefix; ?>pages/recommendations.php" class="<?php echo ($page == 'ai') ? 'active' : ''; ?>">AI Coach</a></li>
+                    <li><a href="<?php echo $path_prefix; ?>pages/listening.php" class="<?php echo ($page == 'listening') ? 'active' : ''; ?>">Listening</a></li>
+                    <li><a href="<?php echo $path_prefix; ?>pages/speaking.php" class="<?php echo ($page == 'speaking') ? 'active' : ''; ?>">Speaking</a></li>
+                    <li><a href="<?php echo $path_prefix; ?>pages/writing.php" class="<?php echo ($page == 'writing') ? 'active' : ''; ?>">Writing</a></li>
+
                 </ul>
             </nav>
         </header>
