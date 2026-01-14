@@ -34,32 +34,48 @@ require_once '../includes/header.php';
 
     <!-- Daily Plan -->
     <section class="card">
-        <h2>Today's AI Plan</h2>
+        <h2>Today's AI Plan (Personalized)</h2>
         <ul style="margin-top: 10px;">
-            <li class="todo-item" style="border: none; padding: 8px 0;">
-                <span style="display: flex; align-items: center; gap: 10px;">
-                    <span
-                        style="width: 8px; height: 8px; background: var(--secondary-color); border-radius: 50%;"></span>
-                    Review Temporal Clauses
-                </span>
-                <span style="font-size: 0.8rem; color: var(--text-muted);">15 min</span>
-            </li>
-            <li class="todo-item" style="border: none; padding: 8px 0;">
-                <span style="display: flex; align-items: center; gap: 10px;">
-                    <span style="width: 8px; height: 8px; background: var(--primary-color); border-radius: 50%;"></span>
-                    Listen to "Tech News Podcast"
-                </span>
-                <span style="font-size: 0.8rem; color: var(--text-muted);">20 min</span>
-            </li>
-            <li class="todo-item" style="border: none; padding: 8px 0;">
-                <span style="display: flex; align-items: center; gap: 10px;">
-                    <span style="width: 8px; height: 8px; background: var(--success); border-radius: 50%;"></span>
-                    Speak: Describe your workspace
-                </span>
-                <span style="font-size: 0.8rem; color: var(--text-muted);">5 min</span>
-            </li>
+            <?php
+            require_once '../includes/mock_data.php';
+            $recs = getAiRecommendations();
+            foreach ($recs as $rec):
+                $color = 'var(--text-muted)';
+                if ($rec['priority'] == 'High')
+                    $color = 'var(--danger)';
+                if ($rec['priority'] == 'Medium')
+                    $color = 'var(--secondary-color)';
+                if ($rec['priority'] == 'Low')
+                    $color = 'var(--success)';
+                ?>
+                <li class="todo-item"
+                    style="border: none; padding: 15px 0; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span style="display: flex; align-items: center; gap: 10px;">
+                            <span
+                                style="width: 10px; height: 10px; background: <?php echo $color; ?>; border-radius: 50%;"></span>
+                            <strong style="font-size: 1rem;"><?php echo $rec['title']; ?></strong>
+                        </span>
+                        <span style="font-size: 0.85rem; color: var(--text-muted); margin-left: 20px;">
+                            Duration: <?php echo $rec['duration']; ?> • Focus: <?php echo ucfirst($rec['type']); ?>
+                        </span>
+                    </div>
+
+                    <!-- integration with To-Do Module -->
+                    <form action="todo.php" method="POST" style="margin: 0;">
+                        <input type="hidden" name="task_text" value="<?php echo htmlspecialchars($rec['title']); ?>">
+                        <input type="hidden" name="priority" value="<?php echo $rec['priority']; ?>">
+                        <button type="submit" name="add" class="btn btn-sm"
+                            style="border: 1px solid var(--border-color); background: rgba(255,255,255,0.05);">
+                            + Add to List
+                        </button>
+                    </form>
+                </li>
+            <?php endforeach; ?>
         </ul>
-        <button class="btn btn-primary" style="width: 100%; margin-top: 15px;">Start Session</button>
+        <div style="text-align: center; margin-top: 15px; font-size: 0.9rem; color: var(--text-muted);">
+            Accepting a task adds it directly to your To-Do List module.
+        </div>
     </section>
 
     <!-- Content Recommendations -->

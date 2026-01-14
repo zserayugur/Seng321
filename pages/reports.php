@@ -58,8 +58,8 @@ $results = getTestResults();
                                 <?php echo $row['level']; ?>
                             </span></td>
                         <td style="padding: 12px;">
-                            <a href="review.php?test=<?php echo urlencode($row['test']); ?>"
-                                class="btn btn-sm btn-primary">Review Answers</a>
+                            <a href="review.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-primary">Review
+                                Answers</a>
                         </td>
                     </tr>
                 <?php endforeach; ?>
