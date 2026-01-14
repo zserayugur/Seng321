@@ -1,6 +1,7 @@
 <?php
+require_once __DIR__ . '/../config/db.php';
 session_start();
-require_once "db.php";
+
 
 $email = $_POST['email'] ?? '';
 $password = $_POST['password'] ?? '';
