@@ -6,7 +6,7 @@ $email = strtolower(trim($_POST['email'] ?? ''));
 $password = $_POST['password'] ?? '';
 
 if ($email === '' || $password === '') {
-  header("Location: /SENG321/login_part/index.php?error=" . urlencode("Email and password required."));
+  header("Location: /Seng321/login_part/index.php?error=" . urlencode("Email and password required."));
   exit;
 }
 
@@ -15,7 +15,7 @@ $stmt->execute([$email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user || !password_verify($password, $user['password_hash'])) {
-  header("Location: /SENG321/login_part/index.php?error=" . urlencode("Login failed."));
+  header("Location: /Seng321/login_part/index.php?error=" . urlencode("Login failed."));
   exit;
 }
 
@@ -31,9 +31,12 @@ $_SESSION["user"] = [
 $role = $_SESSION["user"]["role"];
 
 if ($role === 'admin') {
-  header("Location: /SENG321/admin/dashboard.php"); 
+
+=======
+  header("Location: /Seng321/admin/dashboard.php"); // sende varsa
   exit;
 }
 
-header("Location: /SENG321/login_part/Learner.php");
+// herkes için güvenli yönlendirme:
+header("Location: /Seng321/pages/speaking.php");
 exit;

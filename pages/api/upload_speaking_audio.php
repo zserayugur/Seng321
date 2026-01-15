@@ -31,5 +31,5 @@ $mime = $audio['type'] ?: "audio/webm";
 $stmt = $pdo->prepare("INSERT INTO assessment_uploads (attempt_id, kind, file_path, mime_type) VALUES (?,?,?,?)");
 $stmt->execute([$attemptId, 'speaking_audio', $filename, $mime]);
 
-$publicUrl = "/SENG321/uploads/speaking/" . $filename;
+$publicUrl = "/Seng321/uploads/speaking/" . $filename;
 echo json_encode(["ok"=>true, "public_url"=>$publicUrl]);
