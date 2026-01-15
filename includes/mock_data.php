@@ -1,50 +1,69 @@
 <?php
-// Centralized Mock Data Source
+// includes/mock_data.php - NOW CONVERTED TO REAL DB ADAPTER
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/auth_guard.php';
 
-// FR23: Previous Result Storage
-// FR23: Previous Result Storage
 function getTestResults()
 {
-    if (isset($_SESSION['test_history']) && !empty($_SESSION['test_history'])) {
-        // Detect old mock data (ID 101 is the signature of the old static data)
-        // New data uses time() as ID, which is a large integer.
-        $first = $_SESSION['test_history'][0] ?? null;
-        if ($first && isset($first['id']) && $first['id'] === 101) {
-            $_SESSION['test_history'] = [];
-        }
+    global $pdo;
+    $userId = current_user_id();
 
-        // Also check the LAST item just in case they added new ones on top
-        $last = end($_SESSION['test_history']);
-        if ($last && isset($last['id']) && $last['id'] === 105) {
-            // Filter out IDs < 100000 (old mocks)
-            $_SESSION['test_history'] = array_filter($_SESSION['test_history'], function ($item) {
-                return isset($item['id']) && $item['id'] > 100000;
-            });
-        }
-    }
+    $stmt = $pdo->prepare("SELECT * FROM ai_test_results WHERE user_id = ? ORDER BY created_at DESC");
+    $stmt->execute([$userId]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    if (!isset($_SESSION['test_history'])) {
-        // Init with empty
-        $_SESSION['test_history'] = [];
+    // Map DB fields to UI expectation format
+    $history = [];
+    foreach ($rows as $r) {
+        $history[] = [
+            "id" => $r["id"],
+            "date" => date("Y-m-d", strtotime($r["created_at"])),
+            "test" => $r["test_name"],
+            "type" => $r["test_type"],
+            "score" => floatval($r["score"]),
+            "max_score" => intval($r["max_score"]),
+            "level" => $r["cefr_level"],
+            "status" => "Completed",
+            "details" => json_decode($r["result_json"] ?? '{}', true)
+        ];
     }
-    return $_SESSION['test_history'];
+    return $history;
 }
 
 function addTestResult($result)
 {
-    if (!isset($_SESSION['test_history'])) {
-        getTestResults(); // Init
-    }
-    // Prepend new result
-    array_unshift($_SESSION['test_history'], $result);
+    global $pdo;
+    $userId = current_user_id();
+
+    $sql = "INSERT INTO ai_test_results (user_id, test_type, test_name, score, max_score, cefr_level, result_json) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+    $jsonData = isset($result['details']) ? json_encode($result['details']) : null;
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([
+        $userId,
+        $result['type'],
+        $result['test'],
+        $result['score'],
+        $result['max_score'],
+        $result['level'],
+        $jsonData
+    ]);
 }
 
-// FR10: CEFR status
 function getUserProfile()
 {
-    if (!isset($_SESSION['user_profile'])) {
-        $_SESSION['user_profile'] = [
-            "name" => "Irem Nur",
+    global $pdo;
+    $userId = current_user_id();
+
+    $stmt = $pdo->prepare("SELECT name, email, cefr_level, ielts_estimate, toefl_estimate FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$user) {
+        // Fallback mainly for dev environment if user not found
+        return [
+            "name" => "Guest",
             "current_level" => "Not Determined",
             "target_level" => "C1",
             "ielts_estimate" => 0,
@@ -54,26 +73,58 @@ function getUserProfile()
         ];
     }
 
-    // Auto-fix: If user is stuck on "A1" or "B1" default with NO history, reset to Not Determined
-    if (($_SESSION['user_profile']['current_level'] === 'A1' || $_SESSION['user_profile']['current_level'] === 'B1') && empty($_SESSION['test_history'])) {
-        $_SESSION['user_profile']['current_level'] = 'Not Determined';
-        $_SESSION['user_profile']['ielts_estimate'] = 0;
-        $_SESSION['user_profile']['toefl_estimate'] = 0;
-    }
-    return $_SESSION['user_profile'];
+    return [
+        "name" => $user['name'],
+        "current_level" => $user['cefr_level'] ?? "Not Determined",
+        "target_level" => "C1", // Hardcoded for now or add column
+        "ielts_estimate" => floatval($user['ielts_estimate'] ?? 0),
+        "toefl_estimate" => intval($user['toefl_estimate'] ?? 0),
+        "progress_percent" => 50, // Could be calculated
+        "streak_days" => 1
+    ];
 }
 
 function updateUserProfile($updates)
 {
-    if (!isset($_SESSION['user_profile'])) {
-        getUserProfile(); // Init
-    }
+    global $pdo;
+    $userId = current_user_id();
+
+    // Map UI keys to DB columns
+    $map = [
+        "current_level" => "cefr_level",
+        "ielts_estimate" => "ielts_estimate",
+        "toefl_estimate" => "toefl_estimate"
+    ];
+
+    $setParts = [];
+    $params = [];
+
     foreach ($updates as $k => $v) {
-        $_SESSION['user_profile'][$k] = $v;
+        if (isset($map[$k])) {
+            $col = $map[$k];
+            $setParts[] = "$col = ?";
+            $params[] = $v;
+        }
+    }
+
+    if (empty($setParts))
+        return;
+
+    $params[] = $userId;
+    $sql = "UPDATE users SET " . implode(", ", $setParts) . " WHERE id = ?";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+
+    // Also update session to reflect immediate changes
+    if (isset($_SESSION['user_profile'])) {
+        foreach ($updates as $k => $v) {
+            $_SESSION['user_profile'][$k] = $v;
+        }
     }
 }
 
-// FR13: AI Recommendations
+// Keep the mock function for recommendations as it doesn't need DB yet (can be added later)
 function getAiRecommendations()
 {
     return [
