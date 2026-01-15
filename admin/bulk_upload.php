@@ -1,106 +1,138 @@
 <?php
+$path_prefix = "../";
+$page = "admin";
+
 require_once __DIR__ . "/../includes/admin_guard.php";
 require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../includes/header.php";
 
 $result = null;
+$error = "";
 
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_FILES["csv"])) {
-if (!isset($_FILES["csv"]) || $_FILES["csv"]["error"] !== UPLOAD_ERR_OK) {
-  die("File upload error.");
-}
+/* POST: CSV upload */
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+  try {
+    if (!isset($_FILES["csv"]) || $_FILES["csv"]["error"] !== UPLOAD_ERR_OK) {
+      throw new Exception("File upload error.");
+    }
 
-$tmp = $_FILES["csv"]["tmp_name"];
+    $tmp = $_FILES["csv"]["tmp_name"];
+    if (!is_uploaded_file($tmp)) {
+      throw new Exception("Upload failed.");
+    }
 
-if (!is_uploaded_file($tmp)) {
-  die("Upload failed.");
-}  
+    $handle = fopen($tmp, "r");
+    if (!$handle) {
+      throw new Exception("Cannot open uploaded file.");
+    }
 
-  $tmp = $_FILES["csv"]["tmp_name"];
-  $handle = fopen($tmp, "r");
-  if (!$handle) {
-  die("Cannot open uploaded file.");
-}
+    $header = fgetcsv($handle);
+    if (!$header) {
+      fclose($handle);
+      throw new Exception("Empty CSV file.");
+    }
 
-  $header = fgetcsv($handle);
-  if (!$header) die("Empty CSV file.");
+    $header = array_map(fn($h) => strtolower(trim($h)), $header);
 
-$header = array_map(fn($h) => strtolower(trim($h)), $header);
+    $required = ["name", "email", "password", "role"];
+    foreach ($required as $req) {
+      if (!in_array($req, $header, true)) {
+        fclose($handle);
+        throw new Exception("CSV must contain columns: name,email,password,role");
+      }
+    }
 
-$required = ["name", "email", "password", "role"];
-foreach ($required as $req) {
-  if (!in_array($req, $header, true)) {
-    die("CSV must contain columns: name,email,password,role");
+    $inserted = 0;
+    $failed = 0;
+    $errors = [];
+
+    while (($row = fgetcsv($handle)) !== false) {
+      try {
+        if (count($row) !== count($header)) {
+          throw new Exception("Column count mismatch");
+        }
+
+        $data = array_combine($header, $row);
+
+        $name = trim($data["name"] ?? "");
+        $email = strtolower(trim($data["email"] ?? ""));
+        $password = (string)($data["password"] ?? "");
+        $role = strtoupper(trim($data["role"] ?? "LEARNER"));
+
+        if ($name === "" || $email === "" || $password === "") throw new Exception("Missing fields");
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new Exception("Invalid email format");
+        if (!in_array($role, ["ADMIN", "INSTRUCTOR", "LEARNER"], true)) throw new Exception("Invalid role");
+
+        $hash = password_hash($password, PASSWORD_BCRYPT);
+
+        $stmt = $pdo->prepare("INSERT INTO users (name,email,password_hash,role,active) VALUES (?,?,?,?,1)");
+        $stmt->execute([$name, $email, $hash, $role]);
+
+        $inserted++;
+      } catch (Exception $eRow) {
+        $failed++;
+        $msg = $eRow->getMessage();
+
+        // MySQL duplicate email hata mesajlarını daha okunur yap
+        if (stripos($msg, "duplicate") !== false) {
+          $msg = "Email already exists";
+        }
+
+        $errors[] = ["email" => ($email ?? ""), "error" => $msg];
+      }
+    }
+
+    fclose($handle);
+
+    $result = [
+      "inserted" => $inserted,
+      "failed" => $failed,
+      "errors" => $errors
+    ];
+  } catch (Exception $e) {
+    $error = $e->getMessage();
   }
-}
-
-  $inserted = 0; $failed = 0; $errors = [];
-
-  while (($row = fgetcsv($handle)) !== false) {
-    if (count($row) !== count($header)) {
-  throw new Exception("Column count mismatch");
-}
-
-    $data = array_combine($header, $row);
-    $name = trim($data["name"] ?? "");
-    $email = strtolower(trim($data["email"] ?? ""));
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-  throw new Exception("Invalid email format");
-}
-
-    $password = $data["password"] ?? "";
-    $role = strtoupper(trim($data["role"] ?? "LEARNER"));
-
-    try {
-      if (!$name || !$email || !$password) throw new Exception("Missing fields");
-      if (!in_array($role, ["ADMIN","INSTRUCTOR","LEARNER"])) throw new Exception("Invalid role");
-
-      $hash = password_hash($password, PASSWORD_BCRYPT);
-      $stmt = $pdo->prepare("INSERT INTO users (name,email,password_hash,role) VALUES (?,?,?,?)");
-      $stmt->execute([$name,$email,$hash,$role]);
-      $inserted++;
-    } catch (Exception $e) {
-  $failed++;
-
-  $msg = $e->getMessage();
-  if (stripos($msg, "Duplicate") !== false) {
-    $msg = "Email already exists";
-  }
-
-  $errors[] = ["email"=>$email, "error"=>$msg];
-}
-
-  }
-  fclose($handle);
-  $result = ["inserted"=>$inserted, "failed"=>$failed, "errors"=>$errors];
 }
 ?>
-<!doctype html>
-<html>
-<head><meta charset="utf-8"><title>Bulk Upload</title></head>
-<body>
+
 <h2>Bulk Upload (CSV)</h2>
 
-<form method="post" enctype="multipart/form-data">
-  <input type="file" name="csv" accept=".csv" required>
-  <button type="submit">Upload</button>
-</form>
+<div class="card" style="margin-top:16px;">
+  <p style="margin-top:0;">
+    CSV header şu şekilde olmalı:
+    <b>name,email,password,role</b>
+    (role: ADMIN / INSTRUCTOR / LEARNER)
+  </p>
+
+  <?php if ($error): ?>
+    <div class="auth-msg auth-msg-error" style="margin-bottom:12px;">
+      <?= htmlspecialchars($error) ?>
+    </div>
+  <?php endif; ?>
+
+  <form method="post" enctype="multipart/form-data" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+    <input type="file" name="csv" accept=".csv" required>
+    <button type="submit" class="btn">Upload</button>
+    <a class="btn" href="<?= $path_prefix ?>admin/dashboard.php">Back</a>
+  </form>
+</div>
 
 <?php if ($result): ?>
-  <h3>Result</h3>
-  <p>Inserted: <?= $result["inserted"] ?> | Failed: <?= $result["failed"] ?></p>
-  <?php if (count($result["errors"])): ?>
-    <ul>
-      <?php foreach ($result["errors"] as $e): ?>
-        <li><?= htmlspecialchars($e["email"]) ?> — <?= htmlspecialchars($e["error"]) ?></li>
-      <?php endforeach; ?>
-    </ul>
-  <?php endif; ?>
+  <div class="card" style="margin-top:16px;">
+    <h3 style="margin-top:0;">Result</h3>
+    <p>Inserted: <b><?= (int)$result["inserted"] ?></b> | Failed: <b><?= (int)$result["failed"] ?></b></p>
+
+    <?php if (!empty($result["errors"])): ?>
+      <h4>Errors</h4>
+      <ul style="margin:0; padding-left:18px; line-height:1.9;">
+        <?php foreach ($result["errors"] as $e): ?>
+          <li>
+            <?= htmlspecialchars($e["email"]) ?> — <?= htmlspecialchars($e["error"]) ?>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+    <?php endif; ?>
+  </div>
 <?php endif; ?>
 
-<p><a href="/language-platform/admin/dashboard.php">Back</a></p>
-</body>
-</html>
-<?php
-require_once __DIR__ . "/../includes/footer.php";
-?>
+<?php require_once __DIR__ . "/../includes/footer.php"; ?>
