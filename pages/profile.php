@@ -1,80 +1,102 @@
 <?php
-session_start();
-require_once __DIR__ . '/../config/db.php';
+$page = 'profile';
+$path_prefix = '../';
 
-if (!isset($_SESSION['user'])) {
-    header("Location: /SENG321/login_part/index.php");
-    exit;
+require_once __DIR__ . '/../includes/auth_guard.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/header.php';
+
+$userId = (int)($_SESSION["user"]["id"] ?? 0);
+if ($userId <= 0) {
+  header("Location: /Seng321/login_part/index.php");
+  exit;
 }
 
-$userId = $_SESSION['user']['id'];
+$success = "";
+$error = "";
 
-$stmt = $pdo->prepare("SELECT name, email FROM users WHERE id = ?");
+// 1) Mevcut kullanıcıyı DB'den çek
+$stmt = $pdo->prepare("SELECT id, name, email, role FROM users WHERE id = ? LIMIT 1");
 $stmt->execute([$userId]);
-$user = $stmt->fetch();
+$current = $stmt->fetch();
 
-$plainPassword = $_POST['password'];
-$hash = password_hash($plainPassword, PASSWORD_DEFAULT);
+if (!$current) {
+  $error = "User not found.";
+} else {
 
-$stmt = $pdo->prepare("
-  INSERT INTO users (name, email, role, password_hash, password_plain)
-  VALUES (?, ?, ?, ?, ?)
-");
-$stmt->execute([$name, $email, $role, $hash, $plainPassword]);
+  // 2) Form gönderildiyse (POST) güncelle
+  if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $name  = trim($_POST["name"] ?? "");
+    $email = strtolower(trim($_POST["email"] ?? ""));
 
+    // Role'ü kullanıcı değiştirmesin (güvenlik) -> DB'deki rolü koru
+    $role  = $current["role"];
+
+    // Validasyon
+    if ($name === "") {
+      $error = "Name cannot be empty.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      $error = "Invalid email.";
+    } else {
+      // Email başka kullanıcıda var mı?
+      $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1");
+      $stmt->execute([$email, $userId]);
+      $exists = $stmt->fetch();
+
+      if ($exists) {
+        $error = "This email is already in use.";
+      } else {
+        // Update
+        $stmt = $pdo->prepare("UPDATE users SET name = ?, email = ? WHERE id = ?");
+        $stmt->execute([$name, $email, $userId]);
+
+        // Session güncelle (header vb. doğru göstersin)
+        $_SESSION["user"]["name"] = $name;
+        $_SESSION["user"]["email"] = $email;
+
+        $success = "Profile updated successfully.";
+
+        // Güncel veriyi tekrar çek
+        $stmt = $pdo->prepare("SELECT id, name, email, role FROM users WHERE id = ? LIMIT 1");
+        $stmt->execute([$userId]);
+        $current = $stmt->fetch();
+      }
+    }
+  }
+}
+
+function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 ?>
-<?php if (isset($_GET['success']) && $_GET['success'] === 'password'): ?>
-  <p style="color: green;">Password successfully changed.</p>
-<?php endif; ?>
-
-<?php if (isset($_GET['success']) && $_GET['success'] === 'info'): ?>
-  <p style="color: green;">Profile updated successfully.</p>
-<?php endif; ?>
-
-<?php if (isset($_GET['error']) && $_GET['error'] === 'current'): ?>
-  <p style="color: red;">Current password is incorrect.</p>
-<?php endif; ?>
-
-<?php if (isset($_GET['error']) && $_GET['error'] === 'pwd'): ?>
-  <p style="color: red;">New passwords do not match or are too short.</p>
-<?php endif; ?>
-
-
-<!DOCTYPE html>
-<html>
-<head>
-    <title>My Profile</title>
-</head>
-<body>
 
 <h2>My Profile</h2>
 
-<form method="POST" action="/SENG321/actions/update_profile.php">
-    <h3>Personal Information</h3>
+<?php if ($error): ?>
+  <p style="color:red;"><?= h($error) ?></p>
+<?php endif; ?>
 
-    <label>Full Name</label><br>
-    <input type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>" required><br><br>
+<?php if ($success): ?>
+  <p style="color:green;"><?= h($success) ?></p>
+<?php endif; ?>
 
-    <label>Email (cannot be changed)</label><br>
-    <input type="email" value="<?= htmlspecialchars($user['email']) ?>" disabled><br><br>
+<?php if ($current): ?>
+  <form method="post">
+    <label>Name</label><br>
+    <input name="name" value="<?= h($current["name"] ?? "") ?>" required>
+    <br><br>
 
-    <button type="submit" name="update_info">Update Profile</button>
-</form>
+    <label>Email</label><br>
+    <input name="email" value="<?= h($current["email"] ?? "") ?>" required>
+    <br><br>
 
-<hr>
+    <label>Role</label><br>
+    <input value="<?= h($current["role"] ?? "") ?>" disabled>
+    <br><br>
 
-<form method="POST" action="/SENG321/actions/update_profile.php">
-    <h3>Change Password</h3>
+    <button type="submit">Save</button>
+  </form>
 
-    <input type="password" name="current_password" placeholder="Current password" required><br><br>
-    <input type="password" name="new_password" placeholder="New password" required><br><br>
-    <input type="password" name="confirm_password" placeholder="Confirm new password" required><br><br>
+  <hr style="margin:18px 0;">
+  <a href="/Seng321/login_part/logout.php">Logout</a>
+<?php endif; ?>
 
-    <button type="submit" name="change_password">Change Password</button>
-</form>
-
-<br>
-<a href="/SENG321/pages/speaking.php">← Back to Dashboard</a>
-
-</body>
-</html>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>
