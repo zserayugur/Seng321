@@ -43,7 +43,7 @@ if ($_SESSION["user"]["role"] === "ADMIN") {
   exit;
 }
 if ($_SESSION["user"]["role"] === "INSTRUCTOR") {
-  header("Location: /Seng321/instructor/dashboard.php");
+  header("Location: /Seng321/dashboard/instructor.php");
   exit;
 }
 
