@@ -1,5 +1,6 @@
 <?php
-require "db.php";
+require_once __DIR__ . '/../config/db.php';
+session_start();
 
 $name = $_POST['full_name'] ?? '';
 $email = $_POST['email'] ?? '';

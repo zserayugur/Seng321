@@ -1,12 +1,11 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'LEARNER') {
-    header("Location: ../auth/index.php");
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'learner') {
+    header("Location: login.php");
     exit;
 }
 ?>
-
 <!DOCTYPE html>
 <html>
 <head>

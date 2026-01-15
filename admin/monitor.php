@@ -1,17 +1,19 @@
-<?php require_once __DIR__ . "/../includes/admin_guard.php";
-      require_once __DIR__ . "/../includes/header.php"; ?>
-<html>
-<head><meta charset="utf-8"><title>System Monitoring</title></head>
-<body>
+<?php
+require_once __DIR__ . "/../includes/admin_guard.php";
+$path_prefix = "../";   // admin klasöründen root'a çıkmak için
+require_once __DIR__ . "/../includes/header.php";
+?>
+
 <h2>System Monitoring (Mock)</h2>
+
 <ul>
   <li>System Status: <b>RUNNING</b></li>
   <li>AI Engine Status: <b>ACTIVE</b></li>
   <li>Last Check: <b><?= date("Y-m-d H:i:s") ?></b></li>
 </ul>
+
 <p><a href="/language-platform/admin/dashboard.php">Back</a></p>
-</body>
-</html>
+
 <?php
 require_once __DIR__ . "/../includes/footer.php";
 ?>
