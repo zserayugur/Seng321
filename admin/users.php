@@ -32,11 +32,11 @@ $currentId = (int)($_SESSION['user']['id'] ?? 0);
 <h2>Manage Users</h2>
 
 <p>
-  <a href="/Seng321/admin/user_create.php">+ Create User</a>
+  <a href="/Seng321/admin/user_create.php" style=" color: #e692beff;">+ Create User</a>
  |
-  <a href="/Seng321/admin/bulk_upload.php">Bulk Upload</a>
+  <a href="/Seng321/admin/bulk_upload.php" style=" color: #e692beff;">Bulk Upload</a>
  |
-  <a href="/Seng321/admin/dashboard.php">Back</a>
+  <a href="/Seng321/admin/dashboard.php" style=" color: #e692beff;">Back</a>
 
 </p>
 
