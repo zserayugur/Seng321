@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . "/../includes/db.php";
+require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../includes/auth_guard.php";
 require_once __DIR__ . "/../includes/csrf.php";
 
@@ -23,14 +23,12 @@ if ($assignment_id <= 0) {
   exit("Bad request");
 }
 
-$stmt = $conn->prepare("
+$stmt = $pdo->prepare("
   UPDATE assignments
   SET status='completed', completed_at=NOW()
   WHERE id=? AND student_id=? AND status='pending'
 ");
-$stmt->bind_param("ii", $assignment_id, $student_id);
-$stmt->execute();
-$stmt->close();
+$stmt->execute([$assignment_id, $student_id]);
 
 header("Location: /Seng321/dashboard/student_assignments.php");
 exit;

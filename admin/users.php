@@ -31,22 +31,32 @@ $currentId = (int)($_SESSION['user']['id'] ?? 0);
 
 <h2>Manage Users</h2>
 
-<p>
-  <a href="/Seng321/admin/user_create.php" style=" color: #e692beff;">+ Create User</a>
- |
-  <a href="/Seng321/admin/bulk_upload.php" style=" color: #e692beff;">Bulk Upload</a>
- |
-  <a href="/Seng321/admin/dashboard.php" style=" color: #e692beff;">Back</a>
+<div class="users-toolbar">
+  <div class="users-actions">
+    <a class="btn btn-sm" href="/Seng321/admin/user_create.php">+ Create User</a>
+    <a class="btn btn-sm" href="/Seng321/admin/dashboard.php">Back</a>
+  </div>
 
-</p>
+  <details class="filter-dd">
+  <summary class="filter-btn">
+    Filter: <b><?= htmlspecialchars($role) ?></b>
+    <span class="caret">▾</span>
+  </summary>
 
-<p>
-  Filter:
-  <a href="/Seng321/admin/users.php">All</a> |
-  <a href="/Seng321/admin/users.php?role=LEARNER">Learners</a> |
-  <a href="/Seng321/admin/users.php?role=INSTRUCTOR">Instructors</a> |
-  <a href="/Seng321/admin/users.php?role=ADMIN">Admins</a>
-</p>
+  <div class="filter-menu">
+    <a href="/SENG321/admin/users.php?role=ALL">All</a>
+    <a href="/SENG321/admin/users.php?role=LEARNER">Learners</a>
+    <a href="/SENG321/admin/users.php?role=INSTRUCTOR">Instructors</a>
+    <a href="/SENG321/admin/users.php?role=ADMIN">Admins</a>
+  </div>
+</details>
+
+</div>
+
+<div style="height:10px;"></div>
+
+
+
 
 <table border="1" cellpadding="6" cellspacing="0" style="margin-top:10px;">
   <tr>

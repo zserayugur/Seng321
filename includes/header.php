@@ -67,19 +67,35 @@ if ($role === "admin") {
             <li><a href="<?php echo $path_prefix; ?>pages/todo.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'todo') ? 'active' : ''; ?>">To-Do List</a></li>
             <li><a href="<?php echo $path_prefix; ?>pages/recommendations.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'ai') ? 'active' : ''; ?>">AI Coach</a></li>
 
-            <li><a href="<?php echo $path_prefix; ?>pages/listening.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'listening') ? 'active' : ''; ?>">Listening</a></li>
-            <li><a href="<?php echo $path_prefix; ?>pages/speaking.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'speaking') ? 'active' : ''; ?>">Speaking</a></li>
-            <li><a href="<?php echo $path_prefix; ?>pages/writing.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'writing') ? 'active' : ''; ?>">Writing</a></li>
-            <li><a href="<?php echo $path_prefix; ?>pages/vocabulary.php" style=" color: #e692beff;" class="<?php echo ($page == 'vocabulary') ? 'active' : ''; ?>">Vocabulary</a></li>
-                    <li><a href="<?php echo $path_prefix; ?>pages/grammar.php" style=" color: #e692beff;" class="<?php echo ($page == 'grammar') ? 'active' : ''; ?>">Grammar</a></li>
-                    <li><a href="<?php echo $path_prefix; ?>pages/reading.php" style=" color: #e692beff;" class="<?php echo ($page == 'reading') ? 'active' : ''; ?>">Reading</a></li>
-            <li><a href="<?php echo $path_prefix; ?>pages/profile.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'profile') ? 'active' : ''; ?>">Profile</a></li>
-            <li><a href="<?php echo $base; ?>/login_part/logout.php" style=" color: #e692beff;">Logout</a></li>
+
+            <li class="dropdown">
+  <button class="dropdown-toggle">
+    Assessments <span class="arrow">▾</span>
+  </button>
+
+  <ul class="dropdown-menu">
+    <li><a href="<?php echo $path_prefix; ?>pages/listening.php">Listening</a></li>
+    <li><a href="<?php echo $path_prefix; ?>pages/speaking.php">Speaking</a></li>
+    <li><a href="<?php echo $path_prefix; ?>pages/writing.php">Writing</a></li>
+    <li><a href="<?php echo $path_prefix; ?>pages/vocabulary.php">Vocabulary</a></li>
+    <li><a href="<?php echo $path_prefix; ?>pages/grammar.php">Grammar</a></li>
+    <li><a href="<?php echo $path_prefix; ?>pages/reading.php">Reading</a></li>
+  </ul>
+</li>
+
+            <li><a href="<?php echo $path_prefix; ?>pages/profile.php" class="<?php echo (isset($page) && $page === 'profile') ? 'active' : ''; ?>">Profile</a></li>
+            <li><a href="<?php echo $base; ?>/login_part/logout.php">Logout</a></li>
+
 
           <?php elseif ($role === "instructor"): ?>
 
             <li><a href="<?php echo $path_prefix; ?>pages/reports.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'reports') ? 'active' : ''; ?>">Class Reports</a></li>
             <li><a href="<?php echo $path_prefix; ?>pages/review.php" class="<?php echo (isset($page) && $page === 'review') ? 'active' : ''; ?>">Review Answers</a></li>
+
+
+            <!-- Eğer bu dosyalar sende yoksa bu 2 satırı sil veya dosyaları oluştur -->
+            <li><a href="/Seng321/dashboard/instructor_assignments.php">Assignments</a></li>
+            <li><a href="<?php echo $base; ?>/instructor/class_codes.php">Class Codes</a></li>
 
 
             <li><a href="<?php echo $base; ?>/instructor/assignments.php" style=" color: #e692beff;">Assignments</a></li>
