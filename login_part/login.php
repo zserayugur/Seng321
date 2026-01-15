@@ -21,7 +21,6 @@ if (!$user || !password_verify($password, $user['password_hash'])) {
 
 session_regenerate_id(true);
 
-// ✅ auth_guard ile uyumlu session
 $_SESSION["user"] = [
   "id" => (int)$user["id"],
   "name" => $user["name"] ?? "",
@@ -32,10 +31,9 @@ $_SESSION["user"] = [
 $role = $_SESSION["user"]["role"];
 
 if ($role === 'admin') {
-  header("Location: /SENG321/admin/dashboard.php"); // sende varsa
+  header("Location: /SENG321/admin/dashboard.php"); 
   exit;
 }
 
-// herkes için güvenli yönlendirme:
-header("Location: /SENG321/pages/speaking.php");
+header("Location: /SENG321/login_part/Learner.php");
 exit;

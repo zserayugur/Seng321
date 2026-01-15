@@ -7,34 +7,37 @@ $email = $_POST['email'] ?? '';
 $password = $_POST['password'] ?? '';
 $role = $_POST['role'] ?? 'LEARNER';
 
-/* email format */
+
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     die("Invalid email");
 }
 
-/* password length */
 if (strlen($password) < 6) {
     die("Password too short");
 }
 
-/* email unique */
 $check = $pdo->prepare("SELECT id FROM users WHERE email = ?");
 $check->execute([$email]);
 if ($check->fetch()) {
     die("Email already exists");
 }
 
-/* ROLE → ENUM UYUMLU */
-$role = strtoupper($role); // learner → LEARNER
+$role = strtoupper($role); 
 
 if (!in_array($role, ['ADMIN','INSTRUCTOR','LEARNER'])) {
     $role = 'LEARNER';
 }
+$plainPassword = $_POST['password'];
+$hash = password_hash($plainPassword, PASSWORD_DEFAULT);
 
-/* password hash */
+$stmt = $pdo->prepare("
+  INSERT INTO users (name, email, role, password_hash, password_plain)
+  VALUES (?, ?, ?, ?, ?)
+");
+$stmt->execute([$name, $email, $role, $hash, $plainPassword]);
+
 $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
-/* INSERT (TABLOYA TAM UYUMLU) */
 $stmt = $pdo->prepare("
     INSERT INTO users
     (name, email, password_hash, role, active)

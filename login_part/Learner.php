@@ -16,7 +16,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'learner') {
 <h1>Learner Dashboard</h1>
 <p>Welcome learner 👋😛</p>
 
-<a href="../auth/logout.php">Logout</a>
-
+<a href="../auth/logout.php">Logout</a> <br>
+<a href="../pages/profile.php">Go to Profile Page</a> <br>
+<a href="../pages/speaking.php">Go to Speaking Page</a>
 </body>
 </html>
