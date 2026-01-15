@@ -45,23 +45,21 @@ function getUserProfile()
     if (!isset($_SESSION['user_profile'])) {
         $_SESSION['user_profile'] = [
             "name" => "Irem Nur",
-            "current_level" => "A1", // Default to Beginner
+            "current_level" => "Not Determined",
             "target_level" => "C1",
-            "ielts_estimate" => 3.0,
-            "toefl_estimate" => 20,
+            "ielts_estimate" => 0,
+            "toefl_estimate" => 0,
             "progress_percent" => 0,
             "streak_days" => 1
         ];
     }
 
-    // Auto-fix: If user is stuck on "B1" default with NO history, reset to A1
-    // This fixes the issue for the current active user immediately
-    if ($_SESSION['user_profile']['current_level'] === 'B1' && empty($_SESSION['test_history'])) {
-        $_SESSION['user_profile']['current_level'] = 'A1';
-        $_SESSION['user_profile']['ielts_estimate'] = 3.0;
-        $_SESSION['user_profile']['toefl_estimate'] = 20;
+    // Auto-fix: If user is stuck on "A1" or "B1" default with NO history, reset to Not Determined
+    if (($_SESSION['user_profile']['current_level'] === 'A1' || $_SESSION['user_profile']['current_level'] === 'B1') && empty($_SESSION['test_history'])) {
+        $_SESSION['user_profile']['current_level'] = 'Not Determined';
+        $_SESSION['user_profile']['ielts_estimate'] = 0;
+        $_SESSION['user_profile']['toefl_estimate'] = 0;
     }
-
     return $_SESSION['user_profile'];
 }
 

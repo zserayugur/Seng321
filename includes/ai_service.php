@@ -92,7 +92,7 @@ No markdown.
 No explanation.
 
 Skill: {$skill}
-Level: {$cefr}
+Level: MIXED (Provide questions ranging from A2 to C1 for better placement. 25% Easy, 50% Medium, 25% Hard)
 Count: {$count}
 
 Format:
