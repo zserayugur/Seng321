@@ -29,31 +29,33 @@ $currentId = (int)($_SESSION['user']['id'] ?? 0);
   <p style="color:#ffb3b3;"><?= htmlspecialchars($_GET['error']) ?></p>
 <?php endif; ?>
 
-<h2>Manage Users</h2>
 
-<div class="users-toolbar">
+<div class="users-topbar">
+  <h2 class="users-title">Manage Users</h2>
+
   <div class="users-actions">
-    <a class="btn btn-sm" href="/Seng321/admin/user_create.php">+ Create User</a>
-    <a class="btn btn-sm" href="/Seng321/admin/dashboard.php">Back</a>
+    <a class="users-action" href="/SENG321/admin/user_create.php">+ Create User</a>
+    <a class="users-action" href="/SENG321/admin/dashboard.php">Back</a>
   </div>
-
-  <details class="filter-dd">
-  <summary class="filter-btn">
-    Filter: <b><?= htmlspecialchars($role) ?></b>
-    <span class="caret">▾</span>
-  </summary>
-
-  <div class="filter-menu">
-    <a href="/SENG321/admin/users.php?role=ALL">All</a>
-    <a href="/SENG321/admin/users.php?role=LEARNER">Learners</a>
-    <a href="/SENG321/admin/users.php?role=INSTRUCTOR">Instructors</a>
-    <a href="/SENG321/admin/users.php?role=ADMIN">Admins</a>
-  </div>
-</details>
-
 </div>
 
-<div style="height:10px;"></div>
+<div class="users-subbar">
+  <details class="filter-dd">
+    <summary class="filter-btn">
+      Filter: <b><?= htmlspecialchars($role) ?></b>
+      <span class="caret">▾</span>
+    </summary>
+
+    <div class="filter-menu">
+      <a href="/SENG321/admin/users.php?role=ALL">All</a>
+      <a href="/SENG321/admin/users.php?role=LEARNER">Learners</a>
+      <a href="/SENG321/admin/users.php?role=INSTRUCTOR">Instructors</a>
+      <a href="/SENG321/admin/users.php?role=ADMIN">Admins</a>
+    </div>
+  </details>
+</div>
+
+
 
 
 
