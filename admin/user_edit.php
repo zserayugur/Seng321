@@ -17,7 +17,8 @@ $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
   $name = trim($_POST["name"] ?? "");
-  $role = $_POST["role"] ?? $u["role"];
+ $role = strtoupper(trim($_POST["role"] ?? $u["role"]));
+
   $active = isset($_POST["active"]) ? 1 : 0;
 
   $allowed = ["LEARNER","INSTRUCTOR","ADMIN"];
@@ -35,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   } else {
     $stmt = $pdo->prepare("UPDATE users SET name=?, role=?, active=? WHERE id=?");
     $stmt->execute([$name, $role, $active, $id]);
-    header("Location: /language-platform/admin/users.php");
+    header("Location: /SENG321/admin/users.php");
     exit;
   }
 }

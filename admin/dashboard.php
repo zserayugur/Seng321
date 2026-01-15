@@ -1,4 +1,7 @@
 <?php
+$path_prefix = "../";   // header.php linkleri için
+$page = "admin";        // aktif menü vs. kullanıyorsan
+
 require_once __DIR__ . "/../includes/admin_guard.php";
 require_once __DIR__ . "/../includes/header.php";
 ?>
@@ -7,14 +10,13 @@ require_once __DIR__ . "/../includes/header.php";
 
 <p>Welcome, <?= htmlspecialchars($_SESSION["user"]["name"] ?? "Admin") ?> (ADMIN)</p>
 
-<ul>
- <li><a href="/Seng321/admin/users.php">Manage Users</a></li>
-<li><a href="/Seng321/admin/bulk_upload.php">Bulk Upload (CSV)</a></li>
-<li><a href="/Seng321/admin/monitor.php">System Monitoring</a></li>
-<li><a href="/Seng321/auth/logout.php">Logout</a></li>
+<div class="card" style="margin-top:16px;">
+  <ul style="margin:0; padding-left:18px; line-height:1.9;">
+    <li><a href="<?= $path_prefix ?>admin/users.php">Manage Users</a></li>
+    <li><a href="<?= $path_prefix ?>admin/bulk_upload.php">Bulk Upload (CSV)</a></li>
+    <li><a href="<?= $path_prefix ?>admin/monitor.php">System Monitoring</a></li>
+    <li><a href="/SENG321/auth/logout.php">Logout</a></li>
+  </ul>
+</div>
 
-</ul>
-
-<?php
-require_once __DIR__ . "/../includes/footer.php";
-?>
+<?php require_once __DIR__ . "/../includes/footer.php"; ?>

@@ -106,10 +106,6 @@ function nice_status($s) {
 
 <hr style="margin:18px 0;">
 
-<div style="display:flex;gap:14px;flex-wrap:wrap;">
-  <a href="/Seng321/pages/reports.php">Go to Reports</a>
-  <a href="/Seng321/pages/todo.php">Open To-Do List</a>
-  <a href="/Seng321/login_part/logout.php">Logout</a>
-</div>
+
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

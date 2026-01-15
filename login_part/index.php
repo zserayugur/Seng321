@@ -25,7 +25,7 @@
   </div>
 
   <!-- LOGIN FORM -->
-  <form id="login" class="form" method="POST" action="/SENG321/login_part/login.php">
+  <form id="login" class="form" method="POST" action="/Seng321/login_part/login.php">
     <h2>Login</h2>
 
     <?php if (isset($_GET['registered'])): ?>
@@ -61,7 +61,7 @@
   </form>
 
   <!-- REGISTER FORM -->
-  <form id="register" class="form hidden" method="POST" action="/SENG321/login_part/register.php">
+  <form id="register" class="form hidden" method="POST" action="/Seng321/login_part/register.php">
     <h2>Register</h2>
 
     <input
@@ -89,7 +89,10 @@
     <button type="submit">Create Account</button>
   </form>
 
+<<<<<<< HEAD
  <form id="forgot" class="form hidden" method="POST" action="/Seng321/actions/forgot_password.php">
+=======
+>>>>>>> 21cddfc71e5fa2de1dd93686b8163dceb1c8d28b
 
 
     <!-- FORGOT PASSWORD FORMDUR GIRLS-->
