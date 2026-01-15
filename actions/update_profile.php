@@ -44,7 +44,7 @@ if (isset($_POST['change_password'])) {
     $user = $stmt->fetch();
 
     if (!$user || !password_verify($current, $user['password_hash'])) {
-        header("Location: /SENG321/pages/profile.php?error=current");
+        header("Location: /Seng321/pages/profile.php?error=current");
         exit;
     }
 
@@ -55,6 +55,6 @@ if (isset($_POST['change_password'])) {
     );
     $stmt->execute([$newHash, $userId]);
 
-    header("Location: /SENG321/pages/profile.php?success=password");
+    header("Location: /Seng321/pages/profile.php?success=password");
     exit;
 }
