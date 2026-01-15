@@ -25,7 +25,11 @@ if ($role === "admin") {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LinguaPro - AI Language Learning</title>
+  <div class="logo-wrapper">
+  
+
+</div>
+
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,7 +45,10 @@ if ($role === "admin") {
 <body>
   <div class="container">
     <header class="main-header">
-      <div class="logo">LinguaPro AI</div>
+     <img 
+  src="/Seng321/assets/logo2.png" 
+  alt="LevelUP English"
+  style="height: 120px; width: 150px;">
 
       <nav>
         <ul class="nav-links">

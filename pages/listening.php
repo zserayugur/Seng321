@@ -2,8 +2,12 @@
 $page = 'listening';
 $path_prefix = '../';
 require_once __DIR__ . '/../includes/auth_guard.php';
+require_once __DIR__ . '/../includes/csrf.php';   // ✅ EKLE
+$assignment_id = (int)($_GET['assignment_id'] ?? 0); // ✅ EKLE
+$csrf = csrf_token(); // ✅ EKLE
 require_once __DIR__ . '/../includes/header.php';
 ?>
+
 <h2>Listening Test (Part 1 & 2)</h2>
 
 <button id="btnStart1">Start Listening Test 1</button>
@@ -119,8 +123,30 @@ async function submitListening(isAuto=false){
   document.getElementById('mockBox').textContent=JSON.stringify(evData.evaluation,null,2);
   document.getElementById('status').textContent="Done.";
 
+    // ✅ Eğer bu sınav assignment üzerinden açıldıysa (assignment_id varsa) completed yap
+  const assignmentId = <?= (int)$assignment_id ?>;
+  const csrfToken = "<?= htmlspecialchars($csrf, ENT_QUOTES) ?>";
+
+  if (assignmentId > 0 && part === 2) {
+    const fdDone = new FormData();
+    fdDone.append('csrf_token', csrfToken);
+    fdDone.append('assignment_id', String(assignmentId));
+
+    await fetch('/Seng321/assignments/complete.php', {
+      method: 'POST',
+      body: fdDone
+    });
+
+    // completed olduktan sonra assignments sayfasına dön
+    window.location.href = '/Seng321/dashboard/student_assignments.php';
+    return;
+  }
+
+
   if(part===1) document.getElementById('btnStart2').disabled=false;
 }
+
+//buranın üstünü yoruma kadar ekledim
 
 document.getElementById('btnStart1').addEventListener('click', async ()=>{
   await startAttempt(1);
