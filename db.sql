@@ -213,26 +213,6 @@ CREATE TABLE `users` (
   `password_plain` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
-CREATE TABLE IF NOT EXISTS `assignments` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `instructor_id` int(11) NOT NULL,
-  `student_id` int(11) NOT NULL,
-  `type` enum('writing','speaking','listening','vocabulary','grammar','reading') NOT NULL,
-  `status` enum('pending','completed') NOT NULL DEFAULT 'pending',
-  `title` varchar(255) DEFAULT NULL,
-  `due_at` datetime DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `completed_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_student_status` (`student_id`,`status`),
-  KEY `idx_instructor` (`instructor_id`),
-  CONSTRAINT `fk_assign_instructor`
-    FOREIGN KEY (`instructor_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_assign_student`
-    FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 --
 -- Tablo döküm verisi `users`
 --
