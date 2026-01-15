@@ -47,5 +47,5 @@ if ($_SESSION["user"]["role"] === "INSTRUCTOR") {
   exit;
 }
 
-header("Location: /Seng321/pages/speaking.php");
+header("Location: /Seng321/dashboard/learner.php");
 exit;
