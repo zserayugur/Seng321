@@ -3,12 +3,16 @@
 // API Key'i includes/ai_service.php'den okumaya çalışalım veya elle girelim.
 // Basitlik için dosyayı okuyup define'ı parse edelim.
 
-$content = file_get_contents('includes/ai_service.php');
-preg_match("/define\('GEMINI_API_KEY', '(.*?)'\);/", $content, $matches);
-$apiKey = isset($matches[1]) ? $matches[1] : '';
+$keyFile = __DIR__ . '/.gemini_key';
+
+if (!file_exists($keyFile)) {
+    die("Error: .gemini_key file not found at $keyFile\n");
+}
+
+$apiKey = trim(file_get_contents($keyFile));
 
 if (empty($apiKey)) {
-    die("API Key bulunamadı.\n");
+    die("Error: API Key is empty in .gemini_key\n");
 }
 
 echo "Using API Key: " . substr($apiKey, 0, 5) . "...\n";

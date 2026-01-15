@@ -111,9 +111,17 @@ async function submitListening(isAuto=false){
 
   await saveAll();
 
-  const fd2=new FormData();
-  fd2.append('attempt_id',attemptId);
-  await fetch('api/submit_attempt.php',{method:'POST',body:fd2});
+  const fd2 = new FormData();
+fd2.append('attempt_id', attemptId);
+
+// 🔥 assignment_id EKLENİYOR (kritik)
+fd2.append('assignment_id', "<?= (int)($_GET['assignment_id'] ?? 0) ?>");
+
+await fetch('api/submit_attempt.php', {
+  method: 'POST',
+  body: fd2
+});
+
 
   const fd3=new FormData();
   fd3.append('attempt_id',attemptId);

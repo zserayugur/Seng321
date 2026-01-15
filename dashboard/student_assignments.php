@@ -1,5 +1,7 @@
 <?php
-require_once __DIR__ . "/../includes/db.php";
+$path_prefix = "../";
+$page = "student_assignments";
+require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../includes/auth_guard.php";
 
 if (current_user_role() !== "LEARNER") {
@@ -9,8 +11,7 @@ if (current_user_role() !== "LEARNER") {
 
 $student_id = current_user_id();
 
-$assignments = [];
-$stmt = $conn->prepare("
+$stmt = $pdo->prepare("
   SELECT a.id, a.type, a.title, a.created_at, a.due_at,
          u.name AS instructor_name
   FROM assignments a
@@ -18,11 +19,8 @@ $stmt = $conn->prepare("
   WHERE a.student_id=? AND a.status='pending'
   ORDER BY a.created_at DESC
 ");
-$stmt->bind_param("i", $student_id);
-$stmt->execute();
-$res = $stmt->get_result();
-while ($row = $res->fetch_assoc()) $assignments[] = $row;
-$stmt->close();
+$stmt->execute([$student_id]);
+$assignments = $stmt->fetchAll();
 
 require_once __DIR__ . "/../includes/header.php";
 ?>

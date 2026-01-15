@@ -64,6 +64,8 @@ async function submitEssay(isAuto=false){
 
   const fd2=new FormData();
   fd2.append('attempt_id',attemptId);
+  fd2.append('assignment_id', "<?= (int)($_GET['assignment_id'] ?? 0) ?>");
+
   await fetch('api/submit_attempt.php',{method:'POST',body:fd2});
 
   const fd3=new FormData();

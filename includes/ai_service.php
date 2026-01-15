@@ -1,134 +1,256 @@
 <?php
-// includes/ai_service.php
 require_once __DIR__ . '/env.php';
 require_once 'mock_data.php';
 
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// KULLANICI DİKKAT: BURAYA GOOGLE GEMINI API KEY'İNİZİ YAZINIZ
-// USER ATTENTION: PASTE YOUR GOOGLE GEMINI API KEY HERE
-// Link: https://aistudio.google.com/app/apikey
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-define('GEMINI_API_KEY',  getenv('GEMINI_API_KEY') ?: ''); // Örnek: 'AIzaSy...'
+// API KEY LOADING LOGIC
+$apiKey = '';
+$keyFile = __DIR__ . '/../.gemini_key';
+
+if (file_exists($keyFile)) {
+    $apiKey = trim(file_get_contents($keyFile));
+}
+
+if (empty($apiKey)) {
+    $apiKey = getenv('GEMINI_API_KEY');
+}
+
+if (empty($apiKey) && isset($_ENV['GEMINI_API_KEY'])) {
+    $apiKey = $_ENV['GEMINI_API_KEY'];
+}
+
+if (empty($apiKey)) {
+    error_log("AI Service Error: Gemini API Key not found in .gemini_key or environment.");
+}
+
+define('GEMINI_API_KEY', $apiKey);
+
+/* ============================================================
+   AI RECOMMENDATIONS
+============================================================ */
 
 function fetchAIRecommendationsFromChatGPT()
 {
-    // Fonksiyon ismi uyumluluk için aynı kalsın ama içi Gemini olsun
-
-    // 1. Context Verilerini Hazırla
-    $userProfile = getUserProfile();
-    $recentResults = getTestResults();
-
-    // Eğer API Key yoksa, varsayılan (mock) verileri döndür
     if (empty(GEMINI_API_KEY)) {
         return getFallbackData();
     }
 
-    // 2. Gemini için Prompt Hazırla
-    // Gemini JSON konusunda biraz daha hassas, o yüzden prompt'u netleştirelim.
-    $prompt = "
-        You are an expert English language tutor. Analyze this student:
-        Profile: " . json_encode($userProfile) . "
-        Recent Results: " . json_encode($recentResults) . "
-        
-        Output valid JSON only. No markdown formatting. No ```json tags.
-        Structure:
-        {
-            \"insight_text\": \"A short 2-sentence diagnostic insight.\",
-            \"focus_area\": \"Short phrase (e.g. Grammar & Fluency)\",
-            \"daily_plan\": [
-                {\"title\": \"Task Name\", \"type\": \"grammar/listening/speaking\", \"duration\": \"15 min\", \"priority\": \"High/Medium/Low\"}
-            ],
-            \"resources\": [
-                {\"title\": \"Resource Name\", \"type\": \"Article/Video/Quiz\", \"description\": \"Short description\"}
-            ]
-        }
-        Provide exactly 3 items for daily_plan and 3 items for resources.
-    ";
+    $raw = geminiCall("You are an expert English tutor. Return JSON only. Create a short, motivating study plan for a student at B2 level. Insight must be about language learning consistency. Focus area examples: 'Business Vocabulary', 'Past Perfect Tense', 'IELTS Speaking'. Format: {\"insight_text\":\"...\",\"focus_area\":\"...\",\"daily_plan\":[{\"title\":\"...\",\"duration\":\"...\",\"priority\":\"High/Medium/Low\",\"type\":\"Quiz/Video/Reading\"}],\"resources\":[{\"title\":\"...\",\"description\":\"...\",\"type\":\"Quiz/Video\"}]}");
 
-    // 3. API İsteği Gönder (Google Gemini REST API)
-    // Model: gemini-flash-latest (Listede kesinlikle var olan model)
-    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' . trim(GEMINI_API_KEY);
-
-    $data = [
-        'contents' => [
-            [
-                'parts' => [
-                    ['text' => $prompt]
-                ]
-            ]
-        ]
-    ];
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-
-    // SSL Doğrulamasını Devre Dışı Bırak (XAMPP için)
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-
-    $response = curl_exec($ch);
-
-    if (curl_errno($ch)) {
-        $error_msg = curl_error($ch);
-        curl_close($ch);
-        $fallback = getFallbackData();
-        $fallback['insight_text'] .= " (Connection Error: " . $error_msg . ")";
-        return $fallback;
+    // Extract JSON using regex (handles markdown blocks like ```json ... ```)
+    if (preg_match('/\{[\s\S]*\}/', $raw, $matches)) {
+        $jsonStr = $matches[0];
+        $data = json_decode($jsonStr, true);
+        if ($data)
+            return $data;
     }
 
-    curl_close($ch);
-
-    // 4. Yanıtı İşle
-    $decodedResponse = json_decode($response, true);
-
-    // Hata Kontrolü
-    if (isset($decodedResponse['error'])) {
-        $errorMsg = $decodedResponse['error']['message'] ?? 'Unknown Gemini Error';
-        $fallback = getFallbackData();
-        $fallback['insight_text'] = "Gemini API Error: " . $errorMsg;
-        return $fallback;
-    }
-
-    // Cevabı al
-    if (isset($decodedResponse['candidates'][0]['content']['parts'][0]['text'])) {
-        $rawText = $decodedResponse['candidates'][0]['content']['parts'][0]['text'];
-
-        // Markdown temizliği (Gemini bazen ```json ekler)
-        $rawText = str_replace("```json", "", $rawText);
-        $rawText = str_replace("```", "", $rawText);
-
-        $aiData = json_decode($rawText, true);
-
-        if ($aiData) {
-            return $aiData;
-        } else {
-            $fallback = getFallbackData();
-            $fallback['insight_text'] = "Gemini Parse Error. Raw: " . substr($rawText, 0, 100);
-            return $fallback;
-        }
-    }
-
-    $fallback = getFallbackData();
-    $fallback['insight_text'] .= " (No valid response from Gemini)";
-    return $fallback;
+    // Fallback if parsing fails
+    error_log("AI Parse Error. Raw output: " . substr($raw, 0, 200));
+    return getFallbackData();
 }
 
-// Fallback Data (Aynı kalıyor)
+/* ============================================================
+   AI TEST QUESTIONS
+============================================================ */
+
+function fetchAITestQuestions(string $skill, string $cefr, int $count = 20): array
+{
+    if (empty(GEMINI_API_KEY))
+        return getFallbackTestQuestions($skill, $cefr, $count);
+
+    $skill = strtolower($skill);
+
+    // 🔥 READING PROMPT
+    if ($skill === "reading") {
+        $prompt = "
+You are creating an English reading test.
+
+First write a CEFR {$cefr} level reading passage of 120–180 words.
+
+Then create {$count} multiple choice questions based ONLY on that passage.
+
+Rules:
+- Return JSON only
+- No markdown
+- No explanation
+- 4 choices each
+- answer_index 0–3
+
+Format:
+{
+  \"passage\": \"Full reading text here\",
+  \"questions\": [
+     {\"stem\":\"\",\"choices\":[\"\",\"\",\"\",\"\"],\"answer_index\":0}
+  ]
+}
+";
+    } else {
+        // Grammar / Vocab
+        $prompt = "
+Return JSON only.
+No markdown.
+No explanation.
+
+Skill: {$skill}
+Level: {$cefr}
+Count: {$count}
+
+Format:
+{
+  \"questions\": [
+     {\"stem\":\"\",\"choices\":[\"\",\"\",\"\",\"\"],\"answer_index\":0}
+  ]
+}
+";
+    }
+
+    $raw = geminiCall($prompt);
+
+    // Extract JSON using regex (handles markdown blocks like ```json ... ```)
+    if (!preg_match('/\{[\s\S]*\}/', $raw, $m)) {
+        error_log("AI Questions Error: No JSON found in response.");
+        return getFallbackTestQuestions($skill, $cefr, $count);
+    }
+
+    // Try to decode
+    $data = json_decode($m[0], true);
+
+    // If decoding failed, it might be due to control characters. Try to clean it.
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        $cleanJson = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $m[0]); // Remove control chars
+        $data = json_decode($cleanJson, true);
+    }
+
+    if (!$data) {
+        error_log("AI Questions JSON Decode Error: " . json_last_error_msg());
+        return getFallbackTestQuestions($skill, $cefr, $count);
+    }
+
+    if (!isset($data["questions"])) {
+        return getFallbackTestQuestions($skill, $cefr, $count);
+    }
+
+    $normalized = normalizeQuestionsForUI($data["questions"]);
+
+    if (count($normalized) === 0) {
+        return getFallbackTestQuestions($skill, $cefr, $count);
+    }
+
+    $passage = null;
+    if ($skill === "reading") {
+        $passage = $data["passage"] ?? null;
+    }
+
+    return [
+        "skill" => $skill,
+        "cefr" => $cefr,
+        "passage" => $passage,
+        "questions" => $normalized,
+        "source" => "gemini"
+    ];
+}
+
+/* ============================================================
+   GEMINI CALL
+============================================================ */
+
+function geminiCall(string $prompt): string
+{
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" . GEMINI_API_KEY;
+
+    $payload = [
+        "contents" => [["parts" => [["text" => $prompt]]]]
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false
+    ]);
+
+    $response = curl_exec($ch);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($curlError) {
+        error_log("Gemini cURL Error: " . $curlError);
+        return "";
+    }
+
+    $json = json_decode($response, true);
+
+    if (!isset($json['candidates'][0]['content']['parts'][0]['text'])) {
+        error_log("Gemini API unexpected response: " . substr($response, 0, 500));
+        return "";
+    }
+
+    return $json['candidates'][0]['content']['parts'][0]['text'];
+}
+
+/* ============================================================
+   NORMALIZER
+============================================================ */
+
+function normalizeQuestionsForUI($questions)
+{
+    $out = [];
+
+    foreach ($questions as $q) {
+        $stem = $q["stem"] ?? $q["question"] ?? "";
+        $choices = $q["choices"] ?? $q["options"] ?? [];
+        $ans = $q["answer_index"] ?? $q["answer"] ?? 0;
+
+        if (is_string($ans) && preg_match('/^[A-D]$/i', $ans)) {
+            $ans = ord(strtoupper($ans)) - 65;
+        }
+
+        $out[] = [
+            "stem" => $stem,
+            "choices" => array_values($choices),
+            "answer_index" => intval($ans)
+        ];
+    }
+
+    return $out;
+}
+
+/* ============================================================
+   FALLBACK
+============================================================ */
+
+function getFallbackTestQuestions($skill, $cefr, $count)
+{
+    $q = [];
+    for ($i = 1; $i <= $count; $i++) {
+        $q[] = [
+            "stem" => "Mock Question {$i} for {$skill} ({$cefr})",
+            "choices" => ["Option A", "Option B", "Option C", "Option D"],
+            "answer_index" => 0
+        ];
+    }
+
+    $data = [
+        "questions" => $q,
+        "source" => "fallback"
+    ];
+
+    if (strtolower($skill) === 'reading') {
+        $data['passage'] = "This is a placeholder reading passage because the AI could not be reached. \n\nLearning a language requires consistent practice. Reading daily helps expand vocabulary and understanding of grammar structures. In this mock test, you can practice answering questions even without a generated text, or try refreshing the page to connect to the AI again.";
+    }
+
+    return $data;
+}
+
 function getFallbackData()
 {
     return [
-        'insight_text' => "Based on your recent tests, our AI usually detects patterns here. (API Key Missing Mode)",
-        'focus_area' => "Demo Mode",
-        'daily_plan' => getAiRecommendations(),
-        'resources' => [
-            ['title' => 'Advanced Grammar Guide', 'type' => 'Article', 'description' => 'Comprehensive guide to complex structures.'],
-            ['title' => 'BBC Learning English', 'type' => 'Video', 'description' => 'Daily news review in English.'],
-            ['title' => 'IELTS Mock Test 4', 'type' => 'Quiz', 'description' => 'Full length practice test.']
-        ]
+        "insight_text" => "Demo mode",
+        "focus_area" => "AI offline",
+        "daily_plan" => [],
+        "resources" => []
     ];
 }
-?>
