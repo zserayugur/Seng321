@@ -2,8 +2,12 @@
 $page = 'listening';
 $path_prefix = '../';
 require_once __DIR__ . '/../includes/auth_guard.php';
+require_once __DIR__ . '/../includes/csrf.php';   // ✅ EKLE
+$assignment_id = (int)($_GET['assignment_id'] ?? 0); // ✅ EKLE
+$csrf = csrf_token(); // ✅ EKLE
 require_once __DIR__ . '/../includes/header.php';
 ?>
+
 <h2>Listening Test (Part 1 & 2)</h2>
 
 <button id="btnStart1">Start Listening Test 1</button>
