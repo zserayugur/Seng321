@@ -34,18 +34,35 @@ function fetchAIRecommendationsFromChatGPT()
         return getFallbackData();
     }
 
-    $raw = geminiCall("You are an expert English tutor. Return JSON only. Create a short, motivating study plan for a student at B2 level. Insight must be about language learning consistency. Focus area examples: 'Business Vocabulary', 'Past Perfect Tense', 'IELTS Speaking'. Format: {\"insight_text\":\"...\",\"focus_area\":\"...\",\"daily_plan\":[{\"title\":\"...\",\"duration\":\"...\",\"priority\":\"High/Medium/Low\",\"type\":\"Quiz/Video/Reading\"}],\"resources\":[{\"title\":\"...\",\"description\":\"...\",\"type\":\"Quiz/Video\"}]}");
+    $raw = geminiCall("You are an expert English tutor. Return raw JSON only. Do not wrap in markdown code blocks. Create a short, motivating study plan for a student at B2 level. Insight must be about language learning consistency. Focus area examples: 'Business Vocabulary', 'Past Perfect Tense', 'IELTS Speaking'. Format: {\"insight_text\":\"...\",\"focus_area\":\"...\",\"daily_plan\":[{\"title\":\"...\",\"duration\":\"...\",\"priority\":\"High/Medium/Low\",\"type\":\"Quiz/Video/Reading\"}],\"resources\":[{\"title\":\"...\",\"description\":\"...\",\"type\":\"Quiz/Video\"}]}");
 
     // Extract JSON using regex (handles markdown blocks like ```json ... ```)
     if (preg_match('/\{[\s\S]*\}/', $raw, $matches)) {
         $jsonStr = $matches[0];
+
+        // Sometimes AI adds ```json ... ``` wrapper inside the match if we aren't careful, 
+        // or control characters. Let's clean it.
+        $jsonStr = preg_replace('/^```json\s*/i', '', $jsonStr);
+        $jsonStr = preg_replace('/^```\s*/i', '', $jsonStr);
+        $jsonStr = preg_replace('/\s*```$/', '', $jsonStr);
+
+        // Remove potentially dangerous control characters
+        $jsonStr = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $jsonStr);
+
         $data = json_decode($jsonStr, true);
         if ($data)
             return $data;
+
+        // If still failed, try decoding the raw match without cleaning (sometimes aggressive cleaning breaks it)
+        $data2 = json_decode($matches[0], true);
+        if ($data2)
+            return $data2;
     }
 
     // Fallback if parsing fails
-    error_log("AI Parse Error. Raw output: " . substr($raw, 0, 200));
+    $errorMsg = "AI Parse Error. Raw: " . htmlspecialchars(substr($raw, 0, 100));
+    error_log($errorMsg);
+
     return getFallbackData();
 }
 
@@ -112,13 +129,20 @@ Format:
         return getFallbackTestQuestions($skill, $cefr, $count);
     }
 
-    // Try to decode
-    $data = json_decode($m[0], true);
+    $jsonStr = $m[0];
 
-    // If decoding failed, it might be due to control characters. Try to clean it.
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        $cleanJson = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $m[0]); // Remove control chars
-        $data = json_decode($cleanJson, true);
+    // Clean markdown and control characters
+    $jsonStr = preg_replace('/^```json\s*/i', '', $jsonStr);
+    $jsonStr = preg_replace('/^```\s*/i', '', $jsonStr);
+    $jsonStr = preg_replace('/\s*```$/', '', $jsonStr);
+    $jsonStr = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $jsonStr);
+
+    // Try to decode
+    $data = json_decode($jsonStr, true);
+
+    // If first attempt fails, try raw match as fallback
+    if (!$data) {
+        $data = json_decode($m[0], true);
     }
 
     if (!$data) {
@@ -174,18 +198,26 @@ function geminiCall(string $prompt): string
 
     $response = curl_exec($ch);
     $curlError = curl_error($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
     if ($curlError) {
-        error_log("Gemini cURL Error: " . $curlError);
-        return "";
+        $msg = "Gemini cURL Error: " . $curlError;
+        error_log($msg);
+        return '{"error": "' . $msg . '"}'; // Return error as JSON so caller sees it
+    }
+
+    if ($httpCode !== 200) {
+        $msg = "Gemini HTTP Error: {$httpCode}. Response: " . substr($response, 0, 200);
+        error_log($msg);
+        return '{"error": "' . $msg . '"}';
     }
 
     $json = json_decode($response, true);
 
     if (!isset($json['candidates'][0]['content']['parts'][0]['text'])) {
         error_log("Gemini API unexpected response: " . substr($response, 0, 500));
-        return "";
+        return $response; // Return raw so we can debug
     }
 
     return $json['candidates'][0]['content']['parts'][0]['text'];
