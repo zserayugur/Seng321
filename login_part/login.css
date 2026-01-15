@@ -43,3 +43,174 @@ h1 {
 .hidden {
   display: none;
 }
+/* ===== Register Card ===== */
+.auth-wrapper {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f7f3ef;
+}
+
+.auth-card {
+  background: #ffffff;
+  padding: 40px 45px;
+  width: 420px;
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+.auth-card h1 {
+  margin-bottom: 25px;
+  color: #e93b6f;
+  font-size: 28px;
+}
+
+.auth-card h2 {
+  text-align: left;
+  margin-bottom: 18px;
+}
+
+.auth-card input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+}
+
+.auth-card button {
+  width: 100%;
+  padding: 12px;
+  background: #eee;
+  border: 1px solid #999;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.auth-card button:hover {
+  background: #ddd;
+}
+
+.auth-card .error {
+  color: red;
+  margin-bottom: 15px;
+}
+
+.auth-card .success {
+  color: green;
+  margin-bottom: 15px;
+}
+
+.auth-card .switch-link {
+  margin-top: 18px;
+  font-size: 14px;
+}
+/* ===== LinguaPro-style auth page ===== */
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, Arial, sans-serif;
+  color: #fff;
+  background: radial-gradient(circle at top right, rgba(193, 39, 108, 0.35), transparent 45%),
+              radial-gradient(circle at top left, rgba(64, 105, 255, 0.35), transparent 45%),
+              linear-gradient(180deg, #0b1220, #07101c 60%, #050b14);
+}
+
+/* container = kart */
+.container {
+  width: min(520px, 92vw);
+  margin: 60px auto;
+  padding: 28px 28px 22px;
+  background: rgba(10, 16, 28, 0.65);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+}
+
+.container h1 {
+  margin: 0 0 18px;
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: 800;
+}
+
+.tabs {
+  display: flex;
+  gap: 12px;
+  margin: 18px 0 18px;
+}
+
+.tabs button {
+  flex: 1;
+  padding: 12px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  cursor: pointer;
+}
+
+.tabs button:hover {
+  background: rgba(255,255,255,0.10);
+}
+
+.form h2 {
+  margin: 6px 0 14px;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.form input, .form select {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 10px 0;
+  padding: 14px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(0,0,0,0.25);
+  color: #fff;
+  outline: none;
+}
+
+.form input::placeholder {
+  color: rgba(255,255,255,0.55);
+}
+
+.form button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.10);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.form button:hover {
+  background: rgba(255,255,255,0.14);
+}
+
+.auth-success {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(46, 204, 113, 0.14);
+  border: 1px solid rgba(46, 204, 113, 0.30);
+  color: #c8f7dc;
+}
+
+.auth-error {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(231, 76, 60, 0.14);
+  border: 1px solid rgba(231, 76, 60, 0.30);
+  color: #ffd3ce;
+}
