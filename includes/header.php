@@ -56,6 +56,7 @@ if ($role === "admin") {
                     <li><a href="<?php echo $path_prefix; ?>pages/listening.php" class="<?php echo ($page == 'listening') ? 'active' : ''; ?>">Listening</a></li>
                     <li><a href="<?php echo $path_prefix; ?>pages/speaking.php" class="<?php echo ($page == 'speaking') ? 'active' : ''; ?>">Speaking</a></li>
                     <li><a href="<?php echo $path_prefix; ?>pages/writing.php" class="<?php echo ($page == 'writing') ? 'active' : ''; ?>">Writing</a></li>
+                    <li><a href="<?php echo $path_prefix; ?>pages/grammar.php" class="<?php echo ($page == 'grammar') ? 'active' : ''; ?>">Grammar</a></li>
                 </ul>
             </nav>
         </header>

@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <title>Authentication</title>
 
-  <link rel="stylesheet" href="login.css">
+  <link rel="stylesheet" href="login.css?v=<?= time() ?>">
 
   <style>
     .hidden {
@@ -89,7 +89,7 @@
     <button type="submit">Create Account</button>
   </form>
 
- <form id="forgot" class="form hidden" method="POST" action="/SENG321/login_part/forgot_password.php">
+ <form id="forgot" class="form hidden" method="POST" action="/Seng321/actions/forgot_password.php">
 
 
     <!-- FORGOT PASSWORD FORMDUR GIRLS-->
