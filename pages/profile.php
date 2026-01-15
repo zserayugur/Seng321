@@ -2,79 +2,140 @@
 session_start();
 require_once __DIR__ . '/../config/db.php';
 
+$page = 'profile';
+$path_prefix = '../';
+$base = "/Seng321";
+
+/* LOGIN KONTROL */
 if (!isset($_SESSION['user'])) {
-    header("Location: /SENG321/login_part/index.php");
+    header("Location: {$base}/login_part/index.php");
     exit;
 }
 
-$userId = $_SESSION['user']['id'];
+$userId = (int)$_SESSION['user']['id'];
+$message = "";
+$error = "";
 
-$stmt = $pdo->prepare("SELECT name, email FROM users WHERE id = ?");
+/* KULLANICI BİLGİLERİNİ ÇEK */
+$stmt = $pdo->prepare("SELECT id, name, email, password_hash FROM users WHERE id = ? LIMIT 1");
 $stmt->execute([$userId]);
-$user = $stmt->fetch();
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$plainPassword = $_POST['password'];
-$hash = password_hash($plainPassword, PASSWORD_DEFAULT);
+if (!$user) {
+    header("Location: {$base}/login_part/logout.php");
+    exit;
+}
 
-$stmt = $pdo->prepare("
-  INSERT INTO users (name, email, role, password_hash, password_plain)
-  VALUES (?, ?, ?, ?, ?)
-");
-$stmt->execute([$name, $email, $role, $hash, $plainPassword]);
+/* ================================
+   PROFİL BİLGİLERİ GÜNCELLEME
+================================ */
+if (isset($_POST['update_info'])) {
+    $name = trim($_POST['name'] ?? '');
 
+    if ($name === '') {
+        $error = "Name cannot be empty.";
+    } else {
+        $stmt = $pdo->prepare("UPDATE users SET name = ? WHERE id = ?");
+        $stmt->execute([$name, $userId]);
+
+        $_SESSION['user']['name'] = $name;
+        $user['name'] = $name;
+
+        $message = "Profile updated successfully.";
+    }
+}
+
+/* ================================
+   ŞİFRE DEĞİŞTİRME
+================================ */
+if (isset($_POST['change_password'])) {
+    $current = $_POST['current_password'] ?? '';
+    $new     = $_POST['new_password'] ?? '';
+    $confirm = $_POST['confirm_password'] ?? '';
+
+    if (!password_verify($current, $user['password_hash'])) {
+        $error = "Current password is incorrect.";
+    } elseif (strlen($new) < 6) {
+        $error = "New password must be at least 6 characters.";
+    } elseif ($new !== $confirm) {
+        $error = "New passwords do not match.";
+    } else {
+        $newHash = password_hash($new, PASSWORD_DEFAULT);
+
+        $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+        $stmt->execute([$newHash, $userId]);
+
+        $message = "Password successfully changed.";
+    }
+}
+
+require_once __DIR__ . '/../includes/header.php';
 ?>
-<?php if (isset($_GET['success']) && $_GET['success'] === 'password'): ?>
-  <p style="color: green;">Password successfully changed.</p>
-<?php endif; ?>
 
-<?php if (isset($_GET['success']) && $_GET['success'] === 'info'): ?>
-  <p style="color: green;">Profile updated successfully.</p>
-<?php endif; ?>
+<div class="profile-page">
+  <div class="page-title">
+    <h2>My Profile</h2>
+    <p class="muted">Update your personal information and password.</p>
+  </div>
 
-<?php if (isset($_GET['error']) && $_GET['error'] === 'current'): ?>
-  <p style="color: red;">Current password is incorrect.</p>
-<?php endif; ?>
+  <?php if ($message): ?>
+    <div class="alert success"><?= htmlspecialchars($message) ?></div>
+  <?php endif; ?>
 
-<?php if (isset($_GET['error']) && $_GET['error'] === 'pwd'): ?>
-  <p style="color: red;">New passwords do not match or are too short.</p>
-<?php endif; ?>
+  <?php if ($error): ?>
+    <div class="alert error"><?= htmlspecialchars($error) ?></div>
+  <?php endif; ?>
 
+  <div class="profile-grid">
+    <section class="card">
+      <div class="card-header">
+        <h3>Personal Information</h3>
+      </div>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>My Profile</title>
-</head>
-<body>
+      <form method="POST" class="form">
+        <div class="form-row">
+          <label class="form-label">Full Name</label>
+          <input class="form-input" type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>" required>
+        </div>
 
-<h2>My Profile</h2>
+        <div class="form-row">
+          <label class="form-label">Email (cannot be changed)</label>
+          <input class="form-input" type="email" value="<?= htmlspecialchars($user['email']) ?>" disabled>
+        </div>
 
-<form method="POST" action="/SENG321/actions/update_profile.php">
-    <h3>Personal Information</h3>
+        <button class="btn primary" type="submit" name="update_info">Update Profile</button>
+      </form>
+    </section>
 
-    <label>Full Name</label><br>
-    <input type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>" required><br><br>
+    <section class="card">
+      <div class="card-header">
+        <h3>Change Password</h3>
+      </div>
 
-    <label>Email (cannot be changed)</label><br>
-    <input type="email" value="<?= htmlspecialchars($user['email']) ?>" disabled><br><br>
+      <form method="POST" class="form">
+        <div class="form-row">
+          <label class="form-label">Current password</label>
+          <input class="form-input" type="password" name="current_password" required>
+        </div>
 
-    <button type="submit" name="update_info">Update Profile</button>
-</form>
+        <div class="form-row">
+          <label class="form-label">New password</label>
+          <input class="form-input" type="password" name="new_password" required>
+        </div>
 
-<hr>
+        <div class="form-row">
+          <label class="form-label">Confirm new password</label>
+          <input class="form-input" type="password" name="confirm_password" required>
+        </div>
 
-<form method="POST" action="/SENG321/actions/update_profile.php">
-    <h3>Change Password</h3>
+        <button class="btn" type="submit" name="change_password">Change Password</button>
+      </form>
+    </section>
+  </div>
 
-    <input type="password" name="current_password" placeholder="Current password" required><br><br>
-    <input type="password" name="new_password" placeholder="New password" required><br><br>
-    <input type="password" name="confirm_password" placeholder="Confirm new password" required><br><br>
+  <div class="profile-footer">
+    <a class="link" href="<?= $base ?>/dashboard/learner.php">← Back to Dashboard</a>
+  </div>
+</div>
 
-    <button type="submit" name="change_password">Change Password</button>
-</form>
-
-<br>
-<a href="/SENG321/pages/speaking.php">← Back to Dashboard</a>
-
-</body>
-</html>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>
