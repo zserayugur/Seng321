@@ -84,7 +84,6 @@
     <select name="role" required>
   <option value="LEARNER">Learner</option>
   <option value="INSTRUCTOR">Instructor</option>
-  <option value="ADMIN">Admin</option>
 </select>
 
     <button type="submit">Create Account</button>
@@ -93,7 +92,7 @@
  <form id="forgot" class="form hidden" method="POST" action="/SENG321/login_part/forgot_password.php">
 
 
-
+    <!-- FORGOT PASSWORD FORMDUR GIRLS-->
     <h2>Forgot Password</h2>
 
     <input
