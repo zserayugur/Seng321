@@ -492,4 +492,66 @@ details.filter-dd > summary::-webkit-details-marker {
   padding: 6px 14px;     /* bunu istersen 5px yap */
   line-height: 1.1;
 }
+.users-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:16px;
+  margin: 8px 0 14px;
+}
+
+.users-toolbar-left{
+  display:flex;
+  align-items:flex-end;
+  gap:18px;
+}
+
+.users-title{
+  margin:0;
+  font-size:2rem;      /* başlık boyutu */
+  line-height:1;
+}
+
+.users-action{
+  font-size:0.9rem;    /* Create User ve Back küçük */
+  text-decoration:none;
+  opacity:0.9;
+}
+
+.users-action:hover{
+  text-decoration:underline;
+}
+
+.users-toolbar-right{
+  display:flex;
+  align-items:flex-end;
+}
+
+/* dropdown içindeki boşluğu azalt */
+.filter-menu a{
+  display:block;
+  padding:8px 12px;    /* burayı küçülttük */
+  line-height:1.2;
+  text-decoration:none;
+  border-radius:6px;
+}
+.users-topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+  margin-bottom:6px;
+}
+
+.users-actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.users-subbar{
+  margin:10px 0 14px 0; /* filter ile tablo arası */
+}
 
