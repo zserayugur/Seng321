@@ -6,18 +6,17 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Role'u normalize et (büyük/küçük harf, boşluk vs.)
+$role = strtolower(trim($_SESSION["user"]["role"] ?? "student"));
+
 // Role'a göre dashboard linki
-$role = $_SESSION["user"]["role"] ?? "student";
-
-// Admin dashboard yolun buysa doğru:
 if ($role === "admin") {
-    $dashboardUrl = "/SENG321/admin/dashboard.php";
+    $dashboardUrl = "/Seng321/admin/dashboard.php";
 } elseif ($role === "instructor") {
-    $dashboardUrl = "/SENG321/dashboard/instructor.php";
+    $dashboardUrl = "/Seng321/dashboard/instructor.php";
 } else {
-    $dashboardUrl = "/SENG321/dashboard/learner.php";
+    $dashboardUrl = "/Seng321/dashboard/learner.php";
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="en">

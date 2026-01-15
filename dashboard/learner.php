@@ -1,5 +1,5 @@
 <?php
-// SENG321/dashboard/learner.php
+// Seng321/dashboard/learner.php
 $page = 'dashboard';
 $path_prefix = '../';
 
@@ -47,19 +47,19 @@ function nice_status($s) {
   <div style="border:1px solid #e5e5e5;border-radius:12px;padding:14px;">
     <h3 style="margin:0 0 6px 0;">Speaking</h3>
     <p style="margin:0 0 10px 0;opacity:.85;">10s prep + 150s recording</p>
-    <a href="/SENG321/pages/speaking.php">Start Speaking</a>
+    <a href="/Seng321/pages/speaking.php">Start Speaking</a>
   </div>
 
   <div style="border:1px solid #e5e5e5;border-radius:12px;padding:14px;">
     <h3 style="margin:0 0 6px 0;">Writing</h3>
     <p style="margin:0 0 10px 0;opacity:.85;">250–450 words / 50 min</p>
-    <a href="/SENG321/pages/writing.php">Start Writing</a>
+    <a href="/Seng321/pages/writing.php">Start Writing</a>
   </div>
 
   <div style="border:1px solid #e5e5e5;border-radius:12px;padding:14px;">
     <h3 style="margin:0 0 6px 0;">Listening</h3>
     <p style="margin:0 0 10px 0;opacity:.85;">Part 1 & Part 2 (10 min)</p>
-    <a href="/SENG321/pages/listening.php">Start Listening</a>
+    <a href="/Seng321/pages/listening.php">Start Listening</a>
   </div>
 </div>
 
@@ -107,9 +107,9 @@ function nice_status($s) {
 <hr style="margin:18px 0;">
 
 <div style="display:flex;gap:14px;flex-wrap:wrap;">
-  <a href="/SENG321/pages/reports.php">Go to Reports</a>
-  <a href="/SENG321/pages/todo.php">Open To-Do List</a>
-  <a href="/SENG321/login_part/logout.php">Logout</a>
+  <a href="/Seng321/pages/reports.php">Go to Reports</a>
+  <a href="/Seng321/pages/todo.php">Open To-Do List</a>
+  <a href="/Seng321/login_part/logout.php">Logout</a>
 </div>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
