@@ -11,33 +11,35 @@ $student_id = current_user_id();
 $assignment_id = (int)($_GET['id'] ?? 0);
 
 if ($assignment_id <= 0) {
-  header("Location: /Seng321/dashboard/student_assignments.php");
+  header("Location: /Seng321/dashboard/learner.php");
   exit;
 }
 
+// assignment gerçekten bu öğrenciye mi ait ve pending mi?
 $stmt = $pdo->prepare("SELECT id, type FROM assignments WHERE id=? AND student_id=? AND status='pending' LIMIT 1");
 $stmt->execute([$assignment_id, $student_id]);
 $row = $stmt->fetch();
 
 if (!$row) {
-  header("Location: /Seng321/dashboard/student_assignments.php");
+  header("Location: /Seng321/dashboard/learner.php");
   exit;
 }
 
 $type = $row['type'];
 
-// ✅ SENİN mevcut sınav sayfaların:
-// listening.php zaten var => /Seng321/exams/listening.php gibi ise buna göre değiştir.
+// ✅ SENİN GERÇEK SAYFA YOLLARIN (pages klasörü!)
 $routes = [
-  'writing'    => '/Seng321/exams/writing.php',
-  'speaking'   => '/Seng321/exams/speaking.php',
-  'listening'  => '/Seng321/exams/listening.php',
-  'vocabulary' => '/Seng321/exams/vocabulary.php',
-  'grammar'    => '/Seng321/exams/grammar.php',
-  'reading'    => '/Seng321/exams/reading.php',
+  'writing'    => '/Seng321/pages/writing.php',
+  'speaking'   => '/Seng321/pages/speaking.php',
+  'listening'  => '/Seng321/pages/listening.php',
+
+  // Bunlar sende varsa açılır; yoksa şimdilik learner’a döndürür
+  'vocabulary' => '/Seng321/pages/vocabulary.php',
+  'grammar'    => '/Seng321/pages/grammar.php',
+  'reading'    => '/Seng321/pages/reading.php',
 ];
 
-$target = $routes[$type] ?? '/Seng321/dashboard/student_assignments.php';
+$target = $routes[$type] ?? '/Seng321/dashboard/learner.php';
 
 // assignment_id'yi sınava taşı
 header("Location: {$target}?assignment_id={$assignment_id}");
