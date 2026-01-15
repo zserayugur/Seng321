@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . "/../db.php"; 
+require_once __DIR__ . "/../config/db.php"; 
 
 $message = "";
 
@@ -39,5 +39,13 @@ if ($user) {
 } else {
     echo "<p>If the email exists, a reset link has been sent.</p>";
 }
+$plainPassword = $_POST['password'];
+$hash = password_hash($plainPassword, PASSWORD_DEFAULT);
+
+$stmt = $pdo->prepare("
+  INSERT INTO users (name, email, role, password_hash, password_plain)
+  VALUES (?, ?, ?, ?, ?)
+");
+$stmt->execute([$name, $email, $role, $hash, $plainPassword]);
 
 echo "<br><a href='index.html'>Back to Login</a>";

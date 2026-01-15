@@ -2,7 +2,7 @@
 session_start();
 
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'instructor') {
-    header("Location: login.php");
+    header("Location: ../config/login.php");
     exit;
 }
 ?>

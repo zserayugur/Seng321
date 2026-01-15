@@ -4,38 +4,48 @@ session_start();
 
 $email = strtolower(trim($_POST['email'] ?? ''));
 $password = $_POST['password'] ?? '';
+$selectedRole = strtoupper(trim($_POST['role'] ?? 'LEARNER')); 
 
 if ($email === '' || $password === '') {
-  header("Location: /SENG321/login_part/index.php?error=" . urlencode("Email and password required."));
+  header("Location: /Seng321/login_part/index.php?tab=login&error=" . urlencode("Email and password required."));
   exit;
 }
 
-$stmt = $pdo->prepare("SELECT id, name, email, role, password_hash FROM users WHERE email = ? LIMIT 1");
+$stmt = $pdo->prepare("SELECT id, name, email, role, password_hash, active FROM users WHERE email = ? LIMIT 1");
 $stmt->execute([$email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user || !password_verify($password, $user['password_hash'])) {
-  header("Location: /SENG321/login_part/index.php?error=" . urlencode("Login failed."));
+  header("Location: /Seng321/login_part/index.php?tab=login&error=" . urlencode("Login failed."));
+  exit;
+}
+
+if ((int)$user['active'] !== 1) {
+  header("Location: /Seng321/login_part/index.php?tab=login&error=" . urlencode("Account is inactive."));
+  exit;
+}
+
+if (strtoupper($user['role']) !== $selectedRole) {
+  header("Location: /Seng321/login_part/index.php?tab=login&error=" . urlencode("Role mismatch."));
   exit;
 }
 
 session_regenerate_id(true);
-
-// ✅ auth_guard ile uyumlu session
 $_SESSION["user"] = [
   "id" => (int)$user["id"],
   "name" => $user["name"] ?? "",
   "email" => $user["email"],
-  "role" => strtolower(trim($user["role"]))
+  "role" => strtoupper($user["role"]) 
 ];
 
-$role = $_SESSION["user"]["role"];
-
-if ($role === 'admin') {
-  header("Location: /SENG321/admin/dashboard.php"); // sende varsa
+if ($_SESSION["user"]["role"] === "ADMIN") {
+  header("Location: /Seng321/admin/dashboard.php");
+  exit;
+}
+if ($_SESSION["user"]["role"] === "INSTRUCTOR") {
+  header("Location: /Seng321/dashboard/instructor.php");
   exit;
 }
 
-// herkes için güvenli yönlendirme:
-header("Location: /SENG321/pages/speaking.php");
+header("Location: /Seng321/dashboard/learner.php");
 exit;

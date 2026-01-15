@@ -1,24 +1,24 @@
 <?php
 if (!isset($path_prefix)) { $path_prefix = ''; }
 
-// Session açık değilse aç (güvenli)
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Role'a göre dashboard linki
-$role = $_SESSION["user"]["role"] ?? "student";
 
-// Admin dashboard yolun buysa doğru:
+$base = "/Seng321";
+$role = strtolower(trim($_SESSION["user"]["role"] ?? "student"));
+
 if ($role === "admin") {
-    $dashboardUrl = "/SENG321/admin/dashboard.php";
+    $dashboardUrl = $base . "/admin/dashboard.php";
 } elseif ($role === "instructor") {
-    $dashboardUrl = "/SENG321/dashboard/instructor.php";
+    $dashboardUrl = $base . "/dashboard/instructor.php";
 } else {
-    $dashboardUrl = "/SENG321/dashboard/learner.php";
+    $dashboardUrl = $base . "/dashboard/learner.php";
 }
 
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -56,6 +56,10 @@ if ($role === "admin") {
                     <li><a href="<?php echo $path_prefix; ?>pages/listening.php" class="<?php echo ($page == 'listening') ? 'active' : ''; ?>">Listening</a></li>
                     <li><a href="<?php echo $path_prefix; ?>pages/speaking.php" class="<?php echo ($page == 'speaking') ? 'active' : ''; ?>">Speaking</a></li>
                     <li><a href="<?php echo $path_prefix; ?>pages/writing.php" class="<?php echo ($page == 'writing') ? 'active' : ''; ?>">Writing</a></li>
+                    <li>
+                     <a href="/Seng321/login_part/logout.php">Logout</a>
+</li>
+
                 </ul>
             </nav>
         </header>

@@ -37,6 +37,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $message = "Password successfully reset. <a href='../auth/login.php'>Login</a>";
     }
 }
+$plainPassword = $_POST['password'];
+$hash = password_hash($plainPassword, PASSWORD_DEFAULT);
+
+$stmt = $pdo->prepare("
+  INSERT INTO users (name, email, role, password_hash, password_plain)
+  VALUES (?, ?, ?, ?, ?)
+");
+$stmt->execute([$name, $email, $role, $hash, $plainPassword]);
+
 ?>
 
 <!DOCTYPE html>

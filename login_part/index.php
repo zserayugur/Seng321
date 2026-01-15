@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,14 +25,24 @@
   </div>
 
   <!-- LOGIN FORM -->
-  <form id="login" class="form" method="POST" action="login.php">
+  <form id="login" class="form" method="POST" action="/Seng321/login_part/login.php">
     <h2>Login</h2>
+
+    <?php if (isset($_GET['registered'])): ?>
+  <p class="auth-success">Registered successfully. Please log in.</p>
+<?php endif; ?>
+
+<?php if (isset($_GET['error'])): ?>
+  <p class="auth-error"><?= htmlspecialchars($_GET['error']) ?></p>
+<?php endif; ?>
+
 
     <input
       type="email"
       name="email"
       placeholder="Email"
-      required>
+      required
+      value="<?= htmlspecialchars($_GET['email'] ?? '') ?>">
 
     <input
       type="password"
@@ -39,17 +50,18 @@
       placeholder="Password"
       required>
 
-    <select name="role">
-    <option value="learner">Learner</option>
-    <option value="instructor">Instructor</option>
-    <option value="admin">Admin</option>
-    </select>
+    <select name="role" required>
+  <option value="LEARNER">Learner</option>
+  <option value="INSTRUCTOR">Instructor</option>
+  <option value="ADMIN">Admin</option>
+</select>
+
 
     <button type="submit">Login</button>
   </form>
 
   <!-- REGISTER FORM -->
-  <form id="register" class="form hidden" method="POST" action="register.php">
+  <form id="register" class="form hidden" method="POST" action="/Seng321/login_part/register.php">
     <h2>Register</h2>
 
     <input
@@ -69,22 +81,25 @@
       placeholder="Password"
       required>
 
-    <select name="role">
-      <option value="learner">Learner</option>
-      <option value="instructor">Instructor</option>
-    </select>
+    <select name="role" required>
+  <option value="LEARNER">Learner</option>
+  <option value="INSTRUCTOR">Instructor</option>
+</select>
 
     <button type="submit">Create Account</button>
   </form>
 
-  <form id="forgot" class="form hidden" method="POST" action="forgot_password.php">
+ <form id="forgot" class="form hidden" method="POST" action="/Seng321/login_part/forgot_password.php">
+
+
+    <!-- FORGOT PASSWORD FORMDUR GIRLS-->
     <h2>Forgot Password</h2>
 
     <input
       type="email"
       name="email"
-      placeholder="Enter your email"
-      required>
+       value="<?= htmlspecialchars($_GET['email'] ?? '') ?>"
+       placeholder="Email" required>
 
     <button type="submit">Send Reset Link</button>
   </form>
@@ -93,14 +108,18 @@
 
 <script>
   function showForm(formId) {
-    console.log("Switching to:", formId);
-
     document.querySelectorAll('.form').forEach(function(form) {
       form.classList.add('hidden');
     });
-
     document.getElementById(formId).classList.remove('hidden');
   }
+
+  // ✅ URL tab parametresi varsa onu aç
+  (function () {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab') || 'login';
+    showForm(tab);
+  })();
 </script>
 
 </body>
