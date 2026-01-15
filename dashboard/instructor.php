@@ -33,12 +33,7 @@ $rows = $stmt->fetchAll();
 
 <p>Welcome, <b><?= h($_SESSION["user"]["name"] ?? "Instructor") ?></b> (INSTRUCTOR)</p>
 
-<div style="display:flex; gap:14px; flex-wrap:wrap; margin:14px 0;">
-  <a href="/Seng321/pages/reports.php">Reports & Analytics</a>
-  <a href="/Seng321/pages/cefr.php">CEFR & Predictions</a>
-  <a href="/Seng321/pages/todo.php">To-Do List</a>
-  <a href="/Seng321/login_part/logout.php">Logout</a>
-</div>
+
 
 <hr style="margin:18px 0;">
 
