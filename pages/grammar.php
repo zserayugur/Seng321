@@ -81,9 +81,9 @@ if ($state && isset($_GET["debug"])) {
 <?php else: ?>
 
     <?php
-        $questions = $state["questions"];
-        $total = count($questions);
-        $idx = $state["idx"];
+    $questions = $state["questions"];
+    $total = count($questions);
+    $idx = $state["idx"];
     ?>
 
     <section class="card" style="margin-top:16px;">
@@ -102,12 +102,62 @@ if ($state && isset($_GET["debug"])) {
 
     <?php elseif ($idx >= $total): ?>
         <?php
-            $correct = 0;
-            foreach ($questions as $i => $q) {
-                $u = $state["answers"][$i] ?? null;
-                if ($u !== null && intval($u) === intval($q["answer_index"])) $correct++;
-            }
-            $pct = round(($correct / $total) * 100);
+        $correct = 0;
+        foreach ($questions as $i => $q) {
+            $u = $state["answers"][$i] ?? null;
+            if ($u !== null && intval($u) === intval($q["answer_index"]))
+                $correct++;
+        }
+        $pct = $total > 0 ? round(($correct / $total) * 100) : 0;
+
+        // --- SAVE RESULT LOGIC ---
+        if (!isset($_SESSION[$sessionKey]["saved"])) {
+            $_SESSION[$sessionKey]["saved"] = true;
+
+            // 1. Determine new level
+            $oldLevel = $profile["current_level"] ?? "B1";
+            $levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
+            $idxLvl = array_search($oldLevel, $levels);
+            if ($idxLvl === false)
+                $idxLvl = 2;
+
+            $change = 0;
+            if ($pct >= 80)
+                $change = 1;      // Level Up
+            elseif ($pct <= 40)
+                $change = -1; // Level Down
+
+            $newIdx = $idxLvl + $change;
+            if ($newIdx < 0)
+                $newIdx = 0;
+            if ($newIdx >= count($levels))
+                $newIdx = count($levels) - 1;
+            $newLevel = $levels[$newIdx];
+
+            // 2. Update Profile
+            $mapIelts = ["A1" => 3.0, "A2" => 4.0, "B1" => 5.0, "B2" => 6.0, "C1" => 7.0, "C2" => 8.0];
+            $mapToefl = ["A1" => 20, "A2" => 35, "B1" => 55, "B2" => 75, "C1" => 95, "C2" => 110];
+
+            updateUserProfile([
+                "current_level" => $newLevel,
+                "ielts_estimate" => $mapIelts[$newLevel],
+                "toefl_estimate" => $mapToefl[$newLevel],
+                "progress_percent" => ($change > 0) ? 20 : 50
+            ]);
+
+            // 3. Add History
+            addTestResult([
+                "id" => time(),
+                "date" => date("Y-m-d"),
+                "test" => "Grammar Assessment",
+                "type" => "standard",
+                "score" => $correct * (100 / $total), // Normalize to 100
+                "max_score" => 100,
+                "level" => $newLevel,
+                "status" => "Completed"
+            ]);
+        }
+        // --- END SAVE LOGIC ---
         ?>
         <section class="card" style="margin-top:16px;">
             <h2>Completed</h2>
@@ -123,11 +173,11 @@ if ($state && isset($_GET["debug"])) {
             <h2>Review</h2>
             <?php foreach ($questions as $i => $q): ?>
                 <?php
-                    $u = $state["answers"][$i] ?? null;
-                    $isCorrect = ($u !== null && intval($u) === intval($q["answer_index"]));
+                $u = $state["answers"][$i] ?? null;
+                $isCorrect = ($u !== null && intval($u) === intval($q["answer_index"]));
                 ?>
                 <div style="padding:12px; border:1px solid var(--border-color); border-radius:10px; margin:10px 0;">
-                    <div style="font-weight:600;">Q<?php echo $i+1; ?>: <?php echo htmlspecialchars($q["stem"]); ?></div>
+                    <div style="font-weight:600;">Q<?php echo $i + 1; ?>: <?php echo htmlspecialchars($q["stem"]); ?></div>
                     <div style="margin-top:6px; opacity:.85;">
                         Your answer: <strong><?php echo $u !== null ? htmlspecialchars($q["choices"][$u]) : "—"; ?></strong>
                         <span style="margin-left:10px;">(<?php echo $isCorrect ? "Correct" : "Wrong"; ?>)</span>
@@ -139,7 +189,7 @@ if ($state && isset($_GET["debug"])) {
             <?php endforeach; ?>
         </section>
 
-        <?php else: ?>
+    <?php else: ?>
         <?php $q = $questions[$idx]; ?>
         <section class="card" style="margin-top:16px;">
             <h2>Question <?php echo $idx + 1; ?></h2>

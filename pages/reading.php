@@ -16,36 +16,43 @@ include __DIR__ . "/../includes/header.php";
 $sessionKey = "reading_dual_test";
 
 /** CEFR helper */
-function cefr_rank(string $lvl): int {
-    $map = ["A1"=>1, "A2"=>2, "B1"=>3, "B2"=>4, "C1"=>5, "C2"=>6];
+function cefr_rank(string $lvl): int
+{
+    $map = ["A1" => 1, "A2" => 2, "B1" => 3, "B2" => 4, "C1" => 5, "C2" => 6];
     $lvl = strtoupper(trim($lvl));
     return $map[$lvl] ?? 3; // default B1
 }
-function stage_cefr(string $current, int $stage): string {
+function stage_cefr(string $current, int $stage): string
+{
     // Stage1: intermediate-ish (B1/B2), Stage2: advanced-ish (C1/C2)
     $current = strtoupper(trim($current));
     $r = cefr_rank($current);
 
     if ($stage === 1) {
-        if ($r <= 2) return "B1";
-        if ($r <= 4) return $current;     // B1/B2
+        if ($r <= 2)
+            return "B1";
+        if ($r <= 4)
+            return $current;     // B1/B2
         return "B2";                      // if C1/C2 => cap to B2
     } else {
-        if ($r >= 6) return "C2";
+        if ($r >= 6)
+            return "C2";
         return "C1";
     }
 }
 
-function compute_score(array $questions, array $answers): array {
+function compute_score(array $questions, array $answers): array
+{
     $total = count($questions);
     $correct = 0;
-    for ($i=0; $i<$total; $i++) {
+    for ($i = 0; $i < $total; $i++) {
         $a = $answers[$i] ?? null;
         $ansIdx = isset($questions[$i]["answer_index"]) ? intval($questions[$i]["answer_index"]) : -1;
-        if ($a !== null && intval($a) === $ansIdx) $correct++;
+        if ($a !== null && intval($a) === $ansIdx)
+            $correct++;
     }
     $pct = $total > 0 ? round(($correct / $total) * 100) : 0;
-    return ["correct"=>$correct, "total"=>$total, "pct"=>$pct];
+    return ["correct" => $correct, "total" => $total, "pct" => $pct];
 }
 
 // Constants per FR17
@@ -164,6 +171,77 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST["action"] ?? "") === "submi
             $_SESSION[$sessionKey]["stages"][$stage]["submitted_at"] = time();
             $_SESSION[$sessionKey]["stages"][$stage]["score"] = $sc["correct"];
             $_SESSION[$sessionKey]["stages"][$stage]["pct"] = $sc["pct"];
+
+            // --- PLACEMENT LOGIC START ---
+            // If Stage 2 is submitted, the whole test is done. Calculate & Save.
+            if ($stage === 2) {
+                // aggregate scores
+                $s1 = $_SESSION[$sessionKey]["stages"][1];
+                $s2 = $_SESSION[$sessionKey]["stages"][2]; // this one
+                // note: $s2 values we just set above are in $_SESSION but $s2 var here is a COPY of old state unless we refresh it
+                // simplify: use values directly
+                $score1 = $s1["score"];
+                $score2 = $sc["correct"];
+                $totalScore = $score1 + $score2;
+                $maxScore = 20; // 10 + 10
+
+                $finalPct = round(($totalScore / $maxScore) * 100);
+
+                // Determine new level
+                $oldLevel = $profile["current_level"] ?? "B1";
+                $levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
+                $idx = array_search($oldLevel, $levels); // e.g. 2 for B1
+                if ($idx === false)
+                    $idx = 2;
+
+                $newLevel = $oldLevel;
+                $change = 0;
+
+                // Logic: High score in Advanced stage moves you up
+                if ($finalPct >= 80) {
+                    $change = 1; // Level Up
+                } elseif ($finalPct <= 40) {
+                    $change = -1; // Level Down
+                }
+
+                $newIdx = $idx + $change;
+                if ($newIdx < 0)
+                    $newIdx = 0;
+                if ($newIdx >= count($levels))
+                    $newIdx = count($levels) - 1;
+
+                $newLevel = $levels[$newIdx];
+
+                // Update Profile
+                // Estimate scores: simple heuristic mapping
+                $mapIelts = ["A1" => 3.0, "A2" => 4.0, "B1" => 5.0, "B2" => 6.0, "C1" => 7.0, "C2" => 8.0];
+                $mapToefl = ["A1" => 20, "A2" => 35, "B1" => 55, "B2" => 75, "C1" => 95, "C2" => 110];
+
+                updateUserProfile([
+                    "current_level" => $newLevel,
+                    "ielts_estimate" => $mapIelts[$newLevel],
+                    "toefl_estimate" => $mapToefl[$newLevel],
+                    "progress_percent" => ($change > 0) ? 20 : 50 // reset progress on level change
+                ]);
+
+                // Save Result History
+                addTestResult([
+                    "id" => time(), // primitive ID
+                    "date" => date("Y-m-d"),
+                    "test" => "Dual Reading Assessment",
+                    "type" => "reading",
+                    "score" => $totalScore,
+                    "max_score" => $maxScore,
+                    "level" => $newLevel,
+                    "status" => "Completed",
+                    "details" => [
+                        "stage1" => $score1,
+                        "stage2" => $score2,
+                        "comment" => "Automatic placement update."
+                    ]
+                ]);
+            }
+            // --- PLACEMENT LOGIC END ---
         }
     }
 
@@ -195,11 +273,11 @@ $state = $_SESSION[$sessionKey] ?? null;
 <?php else: ?>
 
     <?php
-        $activeStage = intval($state["active_stage"] ?? 1);
-        $stageData = $state["stages"][$activeStage] ?? null;
+    $activeStage = intval($state["active_stage"] ?? 1);
+    $stageData = $state["stages"][$activeStage] ?? null;
 
-        $stage1Done = !empty($state["stages"][1]["submitted_at"]);
-        $stage2Done = !empty($state["stages"][2]["submitted_at"]);
+    $stage1Done = !empty($state["stages"][1]["submitted_at"]);
+    $stage2Done = !empty($state["stages"][2]["submitted_at"]);
     ?>
 
     <?php if (!$stageData): ?>
@@ -211,18 +289,19 @@ $state = $_SESSION[$sessionKey] ?? null;
     <?php else: ?>
 
         <?php
-            $label = $stageData["label"] ?? ("Stage " . $activeStage);
-            $cefrUsed = $stageData["cefr"] ?? $currentCefr;
-            $duration = intval($stageData["duration"] ?? $DURATION_SEC);
-            $startedAt = intval($stageData["started_at"] ?? time());
-            $submittedAt = $stageData["submitted_at"] ?? null;
+        $label = $stageData["label"] ?? ("Stage " . $activeStage);
+        $cefrUsed = $stageData["cefr"] ?? $currentCefr;
+        $duration = intval($stageData["duration"] ?? $DURATION_SEC);
+        $startedAt = intval($stageData["started_at"] ?? time());
+        $submittedAt = $stageData["submitted_at"] ?? null;
 
-            $remaining = $duration - (time() - $startedAt);
-            if ($remaining < 0) $remaining = 0;
+        $remaining = $duration - (time() - $startedAt);
+        if ($remaining < 0)
+            $remaining = 0;
 
-            $questions = $stageData["questions"] ?? [];
-            $passage = $stageData["passage"] ?? "";
-            $source = $stageData["source"] ?? "unknown";
+        $questions = $stageData["questions"] ?? [];
+        $passage = $stageData["passage"] ?? "";
+        $source = $stageData["source"] ?? "unknown";
         ?>
 
         <section class="card" style="margin-top:16px;">
@@ -232,7 +311,7 @@ $state = $_SESSION[$sessionKey] ?? null;
                         Stage <?php echo $activeStage; ?>: <?php echo htmlspecialchars($label); ?>
                     </div>
                     <div style="opacity:.8;">
-                        CEFR target: <strong><?php echo htmlspecialchars($cefrUsed); ?></strong>
+                        Test Difficulty: Intermediate (B1)
                         <span style="margin-left:10px;">Source: <?php echo htmlspecialchars($source); ?></span>
                     </div>
                 </div>
@@ -241,9 +320,9 @@ $state = $_SESSION[$sessionKey] ?? null;
                     <div style="opacity:.75;">Time remaining</div>
                     <div id="timer" style="font-weight:800; font-size:1.2rem;">
                         <?php
-                            $mm = floor($remaining / 60);
-                            $ss = $remaining % 60;
-                            echo sprintf("%02d:%02d", $mm, $ss);
+                        $mm = floor($remaining / 60);
+                        $ss = $remaining % 60;
+                        echo sprintf("%02d:%02d", $mm, $ss);
                         ?>
                     </div>
                 </div>
@@ -256,9 +335,9 @@ $state = $_SESSION[$sessionKey] ?? null;
 
         <?php if (!empty($submittedAt)): ?>
             <?php
-                $score = intval($stageData["score"] ?? 0);
-                $pct = intval($stageData["pct"] ?? 0);
-                $total = count($questions);
+            $score = intval($stageData["score"] ?? 0);
+            $pct = intval($stageData["pct"] ?? 0);
+            $total = count($questions);
             ?>
             <section class="card" style="margin-top:16px;">
                 <h2>Stage <?php echo $activeStage; ?> Completed</h2>
@@ -275,22 +354,22 @@ $state = $_SESSION[$sessionKey] ?? null;
             <section class="card" style="margin-top:16px;">
                 <h2>Review (Stage <?php echo $activeStage; ?>)</h2>
                 <?php
-                    $answers = $stageData["answers"] ?? [];
-                    foreach ($questions as $i => $q):
-                        $userA = $answers[$i] ?? null;
-                        $correctIdx = intval($q["answer_index"] ?? -1);
-                        $isCorrect = ($userA !== null && intval($userA) === $correctIdx);
-                        $choices = $q["choices"] ?? [];
-                ?>
+                $answers = $stageData["answers"] ?? [];
+                foreach ($questions as $i => $q):
+                    $userA = $answers[$i] ?? null;
+                    $correctIdx = intval($q["answer_index"] ?? -1);
+                    $isCorrect = ($userA !== null && intval($userA) === $correctIdx);
+                    $choices = $q["choices"] ?? [];
+                    ?>
                     <div style="padding:12px; border:1px solid var(--border-color); border-radius:10px; margin:10px 0;">
-                        <div style="font-weight:700;">Q<?php echo $i+1; ?>: <?php echo htmlspecialchars($q["stem"] ?? ""); ?></div>
+                        <div style="font-weight:700;">Q<?php echo $i + 1; ?>: <?php echo htmlspecialchars($q["stem"] ?? ""); ?></div>
                         <div style="margin-top:8px; opacity:.85;">
                             Your answer:
                             <strong>
                                 <?php
-                                    echo ($userA !== null && isset($choices[intval($userA)]))
-                                        ? htmlspecialchars($choices[intval($userA)])
-                                        : "—";
+                                echo ($userA !== null && isset($choices[intval($userA)]))
+                                    ? htmlspecialchars($choices[intval($userA)])
+                                    : "—";
                                 ?>
                             </strong>
                             <span style="margin-left:10px;">(<?php echo $isCorrect ? "Correct" : "Wrong"; ?>)</span>
@@ -307,11 +386,11 @@ $state = $_SESSION[$sessionKey] ?? null;
 
             <?php if ($stage1Done && $stage2Done): ?>
                 <?php
-                    $s1 = $state["stages"][1];
-                    $s2 = $state["stages"][2];
-                    $sumCorrect = intval($s1["score"] ?? 0) + intval($s2["score"] ?? 0);
-                    $sumTotal = count($s1["questions"] ?? []) + count($s2["questions"] ?? []);
-                    $sumPct = $sumTotal > 0 ? round(($sumCorrect / $sumTotal) * 100) : 0;
+                $s1 = $state["stages"][1];
+                $s2 = $state["stages"][2];
+                $sumCorrect = intval($s1["score"] ?? 0) + intval($s2["score"] ?? 0);
+                $sumTotal = count($s1["questions"] ?? []) + count($s2["questions"] ?? []);
+                $sumPct = $sumTotal > 0 ? round(($sumCorrect / $sumTotal) * 100) : 0;
                 ?>
                 <section class="card" style="margin-top:16px;">
                     <h2>Overall Result</h2>
@@ -361,7 +440,7 @@ $state = $_SESSION[$sessionKey] ?? null;
                         <?php foreach ($questions as $i => $q): ?>
                             <?php $choices = $q["choices"] ?? []; ?>
                             <div style="padding:12px; border:1px solid var(--border-color); border-radius:10px; margin:12px 0;">
-                                <div style="font-weight:700;">Q<?php echo $i+1; ?>: <?php echo htmlspecialchars($q["stem"] ?? ""); ?></div>
+                                <div style="font-weight:700;">Q<?php echo $i + 1; ?>: <?php echo htmlspecialchars($q["stem"] ?? ""); ?></div>
 
                                 <div style="margin-top:10px;">
                                     <?php foreach ($choices as $ci => $c): ?>

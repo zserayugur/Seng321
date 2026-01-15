@@ -2,88 +2,77 @@
 // Centralized Mock Data Source
 
 // FR23: Previous Result Storage
+// FR23: Previous Result Storage
 function getTestResults()
 {
-    return [
-        [
-            "id" => 101, 
-            "date" => "2023-10-25", 
-            "test" => "General Diagnostic A", 
-            "type" => "standard",
-            "score" => 68, 
-            "max_score" => 100, 
-            "level" => "B1", 
-            "status" => "Completed"
-        ],
-        [
-            "id" => 102, 
-            "date" => "2023-11-02", 
-            "test" => "Listening Unit 4", 
-            "type" => "listening",
-            "score" => 85, 
-            "max_score" => 100, 
-            "level" => "B1+", 
-            "status" => "Completed",
-            "details" => [
-                "audio_mock" => true,
-                "transcript" => "Speaker 1: The weather in London is quite unpredictable... [User hears this]"
-            ]
-        ],
-        [
-            "id" => 103, 
-            "date" => "2023-11-10", 
-            "test" => "Speaking Mock", 
-            "type" => "speaking",
-            "score" => 72, 
-            "max_score" => 100, 
-            "level" => "B2", 
-            "status" => "Review Pending",
-            "details" => [
-                "recording_path" => "mock_audio.mp3",
-                "asr_transcript" => "I think that global warming is... um... very danger for our planet.",
-                "feedback" => "Good vocabulary, but work on pronunciation of 'dangerous'."
-            ]
-        ],
-        [
-            "id" => 104, 
-            "date" => "2023-11-15", 
-            "test" => "Writing Task 1", 
-            "type" => "writing",
-            "score" => 82, 
-            "max_score" => 100, 
-            "level" => "B2", 
-            "status" => "Completed",
-            "details" => [
-                "prompt" => "Describe the graph showing population growth.",
-                "essay" => "The graph illustrates the population growth in three different countries over a period of 10 years...",
-                "ai_corrections" => "Review usage of linking words. 'However' was used incorrectly in paragraph 2."
-            ]
-        ],
-        [
-            "id" => 105, 
-            "date" => "2023-11-18", 
-            "test" => "Vocabulary: Business", 
-            "type" => "standard",
-            "score" => 88, 
-            "max_score" => 100, 
-            "level" => "B2", 
-            "status" => "Completed"
-        ],
-    ];
+    if (isset($_SESSION['test_history']) && !empty($_SESSION['test_history'])) {
+        // Detect old mock data (ID 101 is the signature of the old static data)
+        // New data uses time() as ID, which is a large integer.
+        $first = $_SESSION['test_history'][0] ?? null;
+        if ($first && isset($first['id']) && $first['id'] === 101) {
+            $_SESSION['test_history'] = [];
+        }
+
+        // Also check the LAST item just in case they added new ones on top
+        $last = end($_SESSION['test_history']);
+        if ($last && isset($last['id']) && $last['id'] === 105) {
+            // Filter out IDs < 100000 (old mocks)
+            $_SESSION['test_history'] = array_filter($_SESSION['test_history'], function ($item) {
+                return isset($item['id']) && $item['id'] > 100000;
+            });
+        }
+    }
+
+    if (!isset($_SESSION['test_history'])) {
+        // Init with empty
+        $_SESSION['test_history'] = [];
+    }
+    return $_SESSION['test_history'];
+}
+
+function addTestResult($result)
+{
+    if (!isset($_SESSION['test_history'])) {
+        getTestResults(); // Init
+    }
+    // Prepend new result
+    array_unshift($_SESSION['test_history'], $result);
 }
 
 // FR10: CEFR status
 function getUserProfile()
 {
-    return [
-        "name" => "Irem Nur",
-        "current_level" => "B1", // Calculated from recent tests
-        "target_level" => "C1",
-        "ielts_estimate" => 5.5,
-        "toefl_estimate" => 50,
-        "progress_percent" => 65, // For B1 -> B2 progress bar
-        "streak_days" => 12
-    ];
+    if (!isset($_SESSION['user_profile'])) {
+        $_SESSION['user_profile'] = [
+            "name" => "Irem Nur",
+            "current_level" => "A1", // Default to Beginner
+            "target_level" => "C1",
+            "ielts_estimate" => 3.0,
+            "toefl_estimate" => 20,
+            "progress_percent" => 0,
+            "streak_days" => 1
+        ];
+    }
+
+    // Auto-fix: If user is stuck on "B1" default with NO history, reset to A1
+    // This fixes the issue for the current active user immediately
+    if ($_SESSION['user_profile']['current_level'] === 'B1' && empty($_SESSION['test_history'])) {
+        $_SESSION['user_profile']['current_level'] = 'A1';
+        $_SESSION['user_profile']['ielts_estimate'] = 3.0;
+        $_SESSION['user_profile']['toefl_estimate'] = 20;
+    }
+
+    return $_SESSION['user_profile'];
+}
+
+function updateUserProfile($updates)
+{
+    if (!isset($_SESSION['user_profile'])) {
+        getUserProfile(); // Init
+    }
+    foreach ($updates as $k => $v) {
+        $_SESSION['user_profile'][$k] = $v;
+    }
 }
 
 // FR13: AI Recommendations
