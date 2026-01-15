@@ -3,7 +3,7 @@ session_start();
 require_once __DIR__ . '/../db.php';
 
 if (!isset($_SESSION['user'])) {
-    header("Location: /SENG321/login_part/index.php");
+    header("Location: /Seng321/login_part/index.php");
     exit;
 }
 
@@ -22,7 +22,7 @@ if (isset($_POST['update_info'])) {
         $_SESSION['user']['name'] = $name;
     }
 
-    header("Location: /SENG321/pages/profile.php?success=info");
+    header("Location: /Seng321/pages/profile.php?success=info");
     exit;
 }
 
@@ -33,7 +33,7 @@ if (isset($_POST['change_password'])) {
     $confirm = $_POST['confirm_password'] ?? '';
 
     if ($new !== $confirm || strlen($new) < 6) {
-        header("Location: /SENG321/pages/profile.php?error=pwd");
+        header("Location: /Seng321/pages/profile.php?error=pwd");
         exit;
     }
 
