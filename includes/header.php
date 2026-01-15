@@ -12,10 +12,12 @@ $role = $_SESSION["user"]["role"] ?? "student";
 // Admin dashboard yolun buysa doğru:
 if ($role === "admin") {
     $dashboardUrl = "/SENG321/admin/dashboard.php";
+} elseif ($role === "instructor") {
+    $dashboardUrl = "/SENG321/dashboard/instructor.php";
 } else {
-    // Admin değilse "Dashboard" olarak ana modüle götürelim (istersen learner dashboard'a çevirebilirsin)
-    $dashboardUrl = "/SENG321/pages/speaking.php";
+    $dashboardUrl = "/SENG321/dashboard/learner.php";
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
