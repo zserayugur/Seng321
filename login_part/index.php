@@ -77,7 +77,6 @@
     <button type="submit">Create Account</button>
   </form>
 
-  <!-- FORGOT PASSWORD FORM -->
   <form id="forgot" class="form hidden" method="POST" action="forgot_password.php">
     <h2>Forgot Password</h2>
 
@@ -92,7 +91,6 @@
 
 </div>
 
-<!-- 🔴 JS MUTLAKA BODY SONUNDA -->
 <script>
   function showForm(formId) {
     console.log("Switching to:", formId);
