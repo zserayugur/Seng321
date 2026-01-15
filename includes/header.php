@@ -56,38 +56,14 @@ if ($role === "admin") {
           <li><a href="<?php echo $path_prefix; ?>pages/todo.php" class="<?php echo ($page == 'todo') ? 'active' : ''; ?>">To-Do List</a></li>
           <li><a href="<?php echo $path_prefix; ?>pages/recommendations.php" class="<?php echo ($page == 'ai') ? 'active' : ''; ?>">AI Coach</a></li>
 
-          <li><a href="<?php echo $path_prefix; ?>pages/listening.php" class="<?php echo ($page == 'listening') ? 'active' : ''; ?>">Listening</a></li>
-          <li><a href="<?php echo $path_prefix; ?>pages/speaking.php" class="<?php echo ($page == 'speaking') ? 'active' : ''; ?>">Speaking</a></li>
-          <li><a href="<?php echo $path_prefix; ?>pages/writing.php" class="<?php echo ($page == 'writing') ? 'active' : ''; ?>">Writing</a></li>
+                    <li><a href="<?php echo $path_prefix; ?>pages/listening.php" class="<?php echo ($page == 'listening') ? 'active' : ''; ?>">Listening</a></li>
+                    <li><a href="<?php echo $path_prefix; ?>pages/speaking.php" class="<?php echo ($page == 'speaking') ? 'active' : ''; ?>">Speaking</a></li>
+                    <li><a href="<?php echo $path_prefix; ?>pages/writing.php" class="<?php echo ($page == 'writing') ? 'active' : ''; ?>">Writing</a></li>
+                    <li>
+                     <a href="/Seng321/login_part/logout.php">Logout</a>
+</li>
 
-          <li><a href="<?php echo $path_prefix; ?>pages/profile.php" class="<?php echo ($page == 'profile') ? 'active' : ''; ?>">Profile</a></li>
-          <li><a href="<?php echo $base; ?>/login_part/logout.php">Logout</a></li>
-
-        <?php elseif ($role === "instructor"): ?>
-          <!-- INSTRUCTOR MENÜ -->
-          <!-- Requirements: öğretmen rapor/performans, sınıf kodları, ödev/yayın vb. FR5-F7 :contentReference[oaicite:2]{index=2} -->
-          <li><a href="<?php echo $path_prefix; ?>pages/reports.php" class="<?php echo ($page == 'reports') ? 'active' : ''; ?>">Class Reports</a></li>
-          <li><a href="<?php echo $path_prefix; ?>pages/review.php" class="<?php echo ($page == 'review') ? 'active' : ''; ?>">Review Answers</a></li>
-
-          <!-- Eğer instructor sayfaların farklı klasördeyse (ör. /instructor/assignments.php) burayı ona göre yaz -->
-          <li><a href="<?php echo $base; ?>/instructor/assignments.php">Assignments</a></li>
-          <li><a href="<?php echo $base; ?>/instructor/class_codes.php">Class Codes</a></li>
-
-          <li><a href="<?php echo $path_prefix; ?>pages/profile.php" class="<?php echo ($page == 'profile') ? 'active' : ''; ?>">Profile</a></li>
-          <li><a href="<?php echo $base; ?>/login_part/logout.php">Logout</a></li>
-
-        <?php else: ?>
-          <!-- ADMIN MENÜ -->
-          <!-- Requirements: kullanıcı yönetimi, bulk, monitor, role/permission FR4 :contentReference[oaicite:3]{index=3} -->
-          <li><a href="<?php echo $base; ?>/admin/users.php">Manage Users</a></li>
-          <li><a href="<?php echo $base; ?>/admin/bulk_upload.php">Bulk Upload</a></li>
-          <li><a href="<?php echo $base; ?>/admin/monitor.php">System Monitoring</a></li>
-
-          <li><a href="<?php echo $base; ?>/admin/dashboard.php">Admin Home</a></li>
-          <li><a href="<?php echo $base; ?>/login_part/logout.php">Logout</a></li>
-        <?php endif; ?>
-
-      </ul>
-    </nav>
-  </header>
-  <main>
+                </ul>
+            </nav>
+        </header>
+        <main>

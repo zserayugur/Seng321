@@ -1,51 +1,38 @@
-<?php
-require_once __DIR__ . "/../config/db.php"; 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Password Reset</title>
 
-$message = "";
+    <!-- SENİN MEVCUT CSS -->
+    <link rel="stylesheet" href="/SENG321/login_part/login.css?v=<?= time() ?>">
+</head>
+<body>
 
-if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    header("Location: index.html");
-    exit;
-}
+<div class="container">
 
-$email = trim($_POST["email"]);
+    <h1>Password Reset</h1>
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    die("Invalid email.");
-}
+    <div class="auth-success">
+        If the email exists, a reset link has been sent.
+    </div>
 
-$stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-$stmt->execute([$email]);
-$user = $stmt->fetch();
+    <?php if (isset($resetLink)): ?>
+        <div class="auth-success" style="margin-top:12px;">
+            <strong>DEV MODE LINK</strong><br>
+            <a href="<?= htmlspecialchars($resetLink) ?>" style="color:#fff; word-break:break-all;">
+                <?= htmlspecialchars($resetLink) ?>
+            </a>
+        </div>
+    <?php endif; ?>
 
-if ($user) {
-    $token = bin2hex(random_bytes(32));
-    $expires = date("Y-m-d H:i:s", strtotime("+1 hour"));
+    <div style="margin-top:20px; text-align:center;">
+        <a href="/SENG321/login_part/index.php" style="color:#fff; opacity:0.85;">
+            ← Back to Login
+        </a>
+    </div>
 
-    $update = $pdo->prepare("
-        UPDATE users
-        SET reset_token = ?, reset_token_expires = ?
-        WHERE id = ?
-    ");
-    $update->execute([$token, $expires, $user["id"]]);
+</div>
 
-    $resetLink = "http://localhost/your_project/reset_password.php?token=$token";
-
-    echo "<h3>Password Reset</h3>";
-    echo "<p>A reset link has been sent to your email.</p>";
-    echo "<p><b>DEV MODE LINK:</b><br>";
-    echo "<a href='$resetLink'>$resetLink</a></p>";
-
-} else {
-    echo "<p>If the email exists, a reset link has been sent.</p>";
-}
-$plainPassword = $_POST['password'];
-$hash = password_hash($plainPassword, PASSWORD_DEFAULT);
-
-$stmt = $pdo->prepare("
-  INSERT INTO users (name, email, role, password_hash, password_plain)
-  VALUES (?, ?, ?, ?, ?)
-");
-$stmt->execute([$name, $email, $role, $hash, $plainPassword]);
-
-echo "<br><a href='index.html'>Back to Login</a>";
+</body>
+</html>
