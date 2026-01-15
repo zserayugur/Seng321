@@ -12,7 +12,7 @@ require_once __DIR__ . "/../includes/header.php";
   <li>Last Check: <b><?= date("Y-m-d H:i:s") ?></b></li>
 </ul>
 
-<p><a href="/language-platform/admin/dashboard.php">Back</a></p>
+<p><a href="/Seng321/admin/dashboard.php">Back</a></p>
 
 <?php
 require_once __DIR__ . "/../includes/footer.php";

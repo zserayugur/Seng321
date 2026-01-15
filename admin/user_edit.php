@@ -66,7 +66,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   <button type="submit">Save</button>
 </form>
 
-<p><a href="/language-platform/admin/users.php">Back</a></p>
+<p><a href="/Seng321/admin/users.php">Back</a></p>
 
 <?php
 require_once __DIR__ . "/../includes/footer.php";
