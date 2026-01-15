@@ -82,7 +82,7 @@ if ($role === "admin") {
             <li><a href="<?php echo $path_prefix; ?>pages/review.php" class="<?php echo (isset($page) && $page === 'review') ? 'active' : ''; ?>">Review Answers</a></li>
 
             <!-- Eğer bu dosyalar sende yoksa bu 2 satırı sil veya dosyaları oluştur -->
-            <li><a href="<?php echo $base; ?>/instructor/assignments.php">Assignments</a></li>
+            <li><a href="/Seng321/dashboard/instructor_assignments.php">Assignments</a></li>
             <li><a href="<?php echo $base; ?>/instructor/class_codes.php">Class Codes</a></li>
 
             <li><a href="<?php echo $path_prefix; ?>pages/profile.php" class="<?php echo (isset($page) && $page === 'profile') ? 'active' : ''; ?>">Profile</a></li>

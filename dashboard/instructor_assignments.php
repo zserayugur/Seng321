@@ -1,9 +1,10 @@
 <?php
-require_once __DIR__ . "/../includes/db.php";
+$path_prefix = "../";
+$page = "instructor_assignments";
+require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../includes/auth_guard.php";
 require_once __DIR__ . "/../includes/csrf.php";
 
-// Role check
 if (current_user_role() !== "INSTRUCTOR") {
   http_response_code(403);
   exit("Forbidden");
@@ -15,18 +16,15 @@ $success = "";
 
 $allowed_types = ['writing','speaking','listening','vocabulary','grammar','reading'];
 
-// Öğrencileri çek
-$students = [];
-$stmt = $conn->prepare("SELECT id, name, email FROM users WHERE role='LEARNER' AND active=1 ORDER BY name ASC");
-if ($stmt && $stmt->execute()) {
-  $res = $stmt->get_result();
-  while ($row = $res->fetch_assoc()) $students[] = $row;
-  $stmt->close();
-} else {
+// Öğrenciler
+try {
+  $students = $pdo->query("SELECT id, name, email FROM users WHERE role='LEARNER' AND active=1 ORDER BY name ASC")->fetchAll();
+} catch (Throwable $e) {
+  $students = [];
   $errors[] = "Öğrenciler çekilemedi (DB).";
 }
 
-// Form submit
+// POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_validate($_POST['csrf_token'] ?? null);
 
@@ -38,10 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if ($student_id <= 0) $errors[] = "Öğrenci seçmelisin.";
   if (!in_array($type, $allowed_types, true)) $errors[] = "Geçersiz assignment türü.";
 
-  // due_at opsiyonel (datetime-local => 2026-01-15T19:30)
   $due_at = null;
   if ($due_at_raw !== '') {
-    $due_at_raw2 = str_replace('T', ' ', $due_at_raw) . ":00";
+    $due_at_raw2 = str_replace('T', ' ', $due_at_raw);
+    // datetime-local "YYYY-MM-DD HH:MM"
     $dt = date_create($due_at_raw2);
     if ($dt === false) {
       $errors[] = "Teslim tarihi hatalı.";
@@ -50,53 +48,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   }
 
-  // öğrenci gerçekten LEARNER mı?
   if (empty($errors)) {
-    $check = $conn->prepare("SELECT id FROM users WHERE id=? AND role='LEARNER' LIMIT 1");
-    $check->bind_param("i", $student_id);
-    $check->execute();
-    $checkRes = $check->get_result();
-    if ($checkRes->num_rows === 0) $errors[] = "Seçilen kullanıcı LEARNER değil.";
-    $check->close();
+    // öğrenci gerçekten learner mı?
+    $chk = $pdo->prepare("SELECT id FROM users WHERE id=? AND role='LEARNER' LIMIT 1");
+    $chk->execute([$student_id]);
+    if (!$chk->fetch()) {
+      $errors[] = "Seçilen kullanıcı LEARNER değil.";
+    }
   }
 
   if (empty($errors)) {
-    $ins = $conn->prepare("
-      INSERT INTO assignments (instructor_id, student_id, type, title, due_at)
-      VALUES (?, ?, ?, ?, ?)
-    ");
-
-    $title_db = ($title === '') ? null : $title;
-    $due_db = $due_at; // null olabilir
-
-    // null değerler için bind_param yine de çalışır
-    $ins->bind_param("iisss", $instructor_id, $student_id, $type, $title_db, $due_db);
-
-    if ($ins->execute()) {
+    try {
+      $ins = $pdo->prepare("
+        INSERT INTO assignments (instructor_id, student_id, type, title, due_at)
+        VALUES (?, ?, ?, ?, ?)
+      ");
+      $title_db = ($title === '') ? null : $title;
+      $ins->execute([$instructor_id, $student_id, $type, $title_db, $due_at]);
       $success = "Assignment başarıyla atandı.";
-    } else {
-      $errors[] = "DB hatası: " . $conn->error;
+    } catch (Throwable $e) {
+      $errors[] = "DB hatası: " . $e->getMessage();
     }
-    $ins->close();
   }
 }
 
-// Instructor’ın atadıkları
-$assigned = [];
-$stmt2 = $conn->prepare("
-  SELECT a.id, a.type, a.status, a.title, a.created_at, a.due_at,
-         u.name AS student_name, u.email AS student_email
-  FROM assignments a
-  JOIN users u ON u.id = a.student_id
-  WHERE a.instructor_id=?
-  ORDER BY a.created_at DESC
-  LIMIT 200
-");
-$stmt2->bind_param("i", $instructor_id);
-$stmt2->execute();
-$res2 = $stmt2->get_result();
-while ($row = $res2->fetch_assoc()) $assigned[] = $row;
-$stmt2->close();
+// Atadıklarım
+try {
+  $stmt = $pdo->prepare("
+    SELECT a.id, a.type, a.status, a.title, a.created_at, a.due_at,
+           u.name AS student_name, u.email AS student_email
+    FROM assignments a
+    JOIN users u ON u.id = a.student_id
+    WHERE a.instructor_id=?
+    ORDER BY a.created_at DESC
+    LIMIT 200
+  ");
+  $stmt->execute([$instructor_id]);
+  $assigned = $stmt->fetchAll();
+} catch (Throwable $e) {
+  $assigned = [];
+  $errors[] = "Atanan ödevler çekilemedi (DB).";
+}
 
 require_once __DIR__ . "/../includes/header.php";
 ?>
