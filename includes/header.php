@@ -63,7 +63,9 @@ if ($role === "admin") {
             <li><a href="<?php echo $path_prefix; ?>pages/listening.php" class="<?php echo (isset($page) && $page === 'listening') ? 'active' : ''; ?>">Listening</a></li>
             <li><a href="<?php echo $path_prefix; ?>pages/speaking.php" class="<?php echo (isset($page) && $page === 'speaking') ? 'active' : ''; ?>">Speaking</a></li>
             <li><a href="<?php echo $path_prefix; ?>pages/writing.php" class="<?php echo (isset($page) && $page === 'writing') ? 'active' : ''; ?>">Writing</a></li>
-
+            <li><a href="<?php echo $path_prefix; ?>pages/vocabulary.php" class="<?php echo ($page == 'vocabulary') ? 'active' : ''; ?>">Vocabulary</a></li>
+                    <li><a href="<?php echo $path_prefix; ?>pages/grammar.php" class="<?php echo ($page == 'grammar') ? 'active' : ''; ?>">Grammar</a></li>
+                    <li><a href="<?php echo $path_prefix; ?>pages/reading.php" class="<?php echo ($page == 'reading') ? 'active' : ''; ?>">Reading</a></li>
             <li><a href="<?php echo $path_prefix; ?>pages/profile.php" class="<?php echo (isset($page) && $page === 'profile') ? 'active' : ''; ?>">Profile</a></li>
             <li><a href="<?php echo $base; ?>/login_part/logout.php">Logout</a></li>
 

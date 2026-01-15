@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,6 +9,16 @@
   <style>
     .hidden {
       display: none !important;
+    }
+    .auth-error {
+      color: red;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .auth-success {
+      color: green;
+      font-size: 14px;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -29,13 +38,12 @@
     <h2>Login</h2>
 
     <?php if (isset($_GET['registered'])): ?>
-  <p class="auth-success">Registered successfully. Please log in.</p>
-<?php endif; ?>
+      <p class="auth-success">Registered successfully. Please log in.</p>
+    <?php endif; ?>
 
-<?php if (isset($_GET['error'])): ?>
-  <p class="auth-error"><?= htmlspecialchars($_GET['error']) ?></p>
-<?php endif; ?>
-
+    <?php if (isset($_GET['error']) && ($_GET['tab'] ?? 'login') === 'login'): ?>
+      <p class="auth-error"><?= htmlspecialchars($_GET['error']) ?></p>
+    <?php endif; ?>
 
     <input
       type="email"
@@ -51,11 +59,10 @@
       required>
 
     <select name="role" required>
-  <option value="LEARNER">Learner</option>
-  <option value="INSTRUCTOR">Instructor</option>
-  <option value="ADMIN">Admin</option>
-</select>
-
+      <option value="LEARNER">Learner</option>
+      <option value="INSTRUCTOR">Instructor</option>
+      <option value="ADMIN">Admin</option>
+    </select>
 
     <button type="submit">Login</button>
   </form>
@@ -63,6 +70,13 @@
   <!-- REGISTER FORM -->
   <form id="register" class="form hidden" method="POST" action="/Seng321/login_part/register.php">
     <h2>Register</h2>
+
+    <?php if (isset($_GET['error']) && $_GET['error'] === 'weak_password'): ?>
+      <p class="auth-error">
+        Password must be at least 8 characters long and include
+        at least one uppercase letter and one number.
+      </p>
+    <?php endif; ?>
 
     <input
       type="text"
@@ -79,29 +93,31 @@
       type="password"
       name="password"
       placeholder="Password"
-      required>
+      required
+      pattern="^(?=.*[A-Z])(?=.*\d).{8,}$"
+      title="Password must be at least 8 characters long and include at least one uppercase letter and one number">
 
+      <small class="password-hint" style=" opacity : 0.7; font-size: 12px;">
+  Password must be at least 8 characters, include 1 uppercase letter and 1 number.
+  </small> 
     <select name="role" required>
-  <option value="LEARNER">Learner</option>
-  <option value="INSTRUCTOR">Instructor</option>
-</select>
+      <option value="LEARNER">Learner</option>
+      <option value="INSTRUCTOR">Instructor</option>
+    </select>
 
     <button type="submit">Create Account</button>
   </form>
 
-
- <form id="forgot" class="form hidden" method="POST" action="/Seng321/actions/forgot_password.php">
-
-
-
-    <!-- FORGOT PASSWORD FORMDUR GIRLS-->
+  <!-- FORGOT PASSWORD FORM -->
+  <form id="forgot" class="form hidden" method="POST" action="/Seng321/actions/forgot_password.php">
     <h2>Forgot Password</h2>
 
     <input
       type="email"
       name="email"
-       value="<?= htmlspecialchars($_GET['email'] ?? '') ?>"
-       placeholder="Email" required>
+      placeholder="Email"
+      value="<?= htmlspecialchars($_GET['email'] ?? '') ?>"
+      required>
 
     <button type="submit">Send Reset Link</button>
   </form>
@@ -110,13 +126,13 @@
 
 <script>
   function showForm(formId) {
-    document.querySelectorAll('.form').forEach(function(form) {
+    document.querySelectorAll('.form').forEach(form => {
       form.classList.add('hidden');
     });
     document.getElementById(formId).classList.remove('hidden');
   }
 
-  // ✅ URL tab parametresi varsa onu aç
+  // URL'den tab parametresi varsa otomatik aç
   (function () {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab') || 'login';
