@@ -1,6 +1,6 @@
 <?php
 // includes/ai_service.php
-
+require_once __DIR__ . '/env.php';
 require_once 'mock_data.php';
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -8,7 +8,7 @@ require_once 'mock_data.php';
 // USER ATTENTION: PASTE YOUR GOOGLE GEMINI API KEY HERE
 // Link: https://aistudio.google.com/app/apikey
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-define('GEMINI_API_KEY', 'AIzaSyALkgJ4sHeCme05RgESRFNlRVq458YeSDI'); // Örnek: 'AIzaSy...'
+define('GEMINI_API_KEY',  getenv('GEMINI_API_KEY') ?: ''); // Örnek: 'AIzaSy...'
 
 function fetchAIRecommendationsFromChatGPT()
 {
