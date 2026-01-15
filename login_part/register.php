@@ -1,10 +1,5 @@
 <?php
-require_once __DIR__ . '/../config/db.php';
-session_start();
-if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    header("Location: /SENG321/login_part/register_form.php");
-    exit;
-}
+require_once __DIR__ . "/../db.php";
 
 $name = $_POST['full_name'] ?? '';
 $email = $_POST['email'] ?? '';
