@@ -1,6 +1,6 @@
 <?php
 // includes/ai_service.php
-
+require_once __DIR__ . '/env.php';
 require_once 'mock_data.php';
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
