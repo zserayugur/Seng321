@@ -12,11 +12,10 @@ $role = strtolower(trim($_SESSION["user"]["role"] ?? "student"));
 
 if ($role === "admin") {
     $dashboardUrl = $base . "/admin/dashboard.php";
-} elseif ($role === "instructor") {
-    $dashboardUrl = $base . "/dashboard/instructor.php";
 } else {
     $dashboardUrl = $base . "/dashboard/learner.php";
 }
+
 ?>
 
 <!DOCTYPE html>
