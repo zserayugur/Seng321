@@ -1,32 +1,41 @@
 <?php
-require_once __DIR__ . "/../db.php";
+require_once __DIR__ . '/../config/db.php';
 session_start();
 
-$email = $_POST['email'] ?? '';
+$email = strtolower(trim($_POST['email'] ?? ''));
 $password = $_POST['password'] ?? '';
 
-$stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+if ($email === '' || $password === '') {
+  header("Location: /SENG321/login_part/index.php?error=" . urlencode("Email and password required."));
+  exit;
+}
+
+$stmt = $pdo->prepare("SELECT id, name, email, role, password_hash FROM users WHERE email = ? LIMIT 1");
 $stmt->execute([$email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user || !password_verify($password, $user['password_hash'])) {
-    die("Login failed");
+  header("Location: /SENG321/login_part/index.php?error=" . urlencode("Login failed."));
+  exit;
 }
 
-/* ROLE'U KÜÇÜK HARFE SABİTLE */
-$_SESSION['user_id'] = $user['id'];
-$_SESSION['role'] = strtolower(trim($user['role'])); // <<< ÖNEMLİ
+session_regenerate_id(true);
 
-if ($_SESSION['role'] === 'admin') {
-    header("Location: ../admin/dashboard.php");
-    exit;
+// ✅ auth_guard ile uyumlu session
+$_SESSION["user"] = [
+  "id" => (int)$user["id"],
+  "name" => $user["name"] ?? "",
+  "email" => $user["email"],
+  "role" => strtolower(trim($user["role"]))
+];
+
+$role = $_SESSION["user"]["role"];
+
+if ($role === 'admin') {
+  header("Location: /SENG321/admin/dashboard.php"); // sende varsa
+  exit;
 }
 
-if ($_SESSION['role'] === 'instructor') {
-    header("Location: instructor.php");
-    exit;
-}
-
-/* learner */
-header("Location: Learner.php");
+// herkes için güvenli yönlendirme:
+header("Location: /SENG321/pages/speaking.php");
 exit;
