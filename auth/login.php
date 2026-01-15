@@ -1,40 +1,45 @@
+
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Login</title></head>
+<body>
+<h2>Login</h2>
+<?php if ($error) echo "<p style='color:red;'>$error</p>"; ?>
+<form method="post">
+  <input name="email" placeholder="email" required><br><br>
+  <input name="password" type="password" placeholder="password" required><br><br>
+  <button type="submit">Login</button>
+</form>
+</body>
+</html>
 <?php
+require_once __DIR__ . "/../config/db.php";
 session_start();
-require "db.php";
 
-$email = $_POST['email'] ?? '';
-$password = $_POST['password'] ?? '';
+$error = "";
 
-/* 1️⃣ Email format kontrol */
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    die("Invalid email format");
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+  $email = strtolower(trim($_POST["email"] ?? ""));
+  $password = $_POST["password"] ?? "";
+
+  $stmt = $pdo->prepare("SELECT id,name,email,password_hash,role,active FROM users WHERE email=? LIMIT 1");
+  $stmt->execute([$email]);
+  $u = $stmt->fetch();
+
+  if (!$u || (int)$u["active"] !== 1 || !password_verify($password, $u["password_hash"])) {
+    $error = "Invalid credentials.";
+  } else {
+    
+    session_regenerate_id(true);
+
+    $_SESSION["user"] = [
+      "id" => $u["id"],
+      "name" => $u["name"],
+      "email" => $u["email"],
+      "role" => $u["role"]
+    ];
+    header("Location: /language-platform/admin/dashboard.php");
+    exit;
+  }
 }
-
-/* 2️⃣ Kullanıcıyı DB’den çek */
-$stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-$stmt->execute([$email]);
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-/* 3️⃣ Email var mı? */
-if (!$user) {
-    die("No account found with this email");
-}
-
-/* 4️⃣ Şifre doğru mu? */
-if (!password_verify($password, $user['password_hash'])) {
-    die("Incorrect password");
-}
-
-/* 5️⃣ Session */
-$_SESSION['user_id'] = $user['id'];
-$_SESSION['role'] = $user['role'];
-
-/* 6️⃣ Role-based redirect */
-if ($user['role'] === 'admin') {
-    header("Location: ../dashboard/admin.php");
-} elseif ($user['role'] === 'instructor') {
-    header("Location: ../dashboard/instructor.php");
-} else {
-    header("Location: ../dashboard/learner.php");
-}
-exit;
+?>
