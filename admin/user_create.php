@@ -70,7 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   </form>
 
   <p style="margin-top:14px;">
-    <a href="/SENG321/admin/users.php">Back</a>
+    <a href="/Seng321/admin/users.php">Back</a>
   </p>
 </div>
 
