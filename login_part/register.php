@@ -2,54 +2,52 @@
 require_once __DIR__ . '/../config/db.php';
 session_start();
 
-$name = $_POST['full_name'] ?? '';
-$email = $_POST['email'] ?? '';
-$password = $_POST['password'] ?? '';
-$role = $_POST['role'] ?? 'LEARNER';
+/* Bu dosya sadece POST işlemi yapacak */
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+  header("Location: /SENG321/login_part/index.php?tab=register");
+  exit;
+}
 
+$name = trim($_POST['full_name'] ?? '');
+$email = strtolower(trim($_POST['email'] ?? ''));
+$password = $_POST['password'] ?? '';
+$role = strtoupper(trim($_POST['role'] ?? 'LEARNER'));
+
+/* Admin register yasak */
+if ($role === 'ADMIN') {
+  header("Location: /SENG321/login_part/index.php?tab=register&error=" . urlencode("Admin registration is not allowed."));
+  exit;
+}
+
+if ($name === '' || $email === '' || $password === '') {
+  header("Location: /SENG321/login_part/index.php?tab=register&error=" . urlencode("All fields are required."));
+  exit;
+}
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    die("Invalid email");
+  header("Location: /SENG321/login_part/index.php?tab=register&error=" . urlencode("Invalid email."));
+  exit;
 }
 
 if (strlen($password) < 6) {
-    die("Password too short");
+  header("Location: /SENG321/login_part/index.php?tab=register&error=" . urlencode("Password too short (min 6)."));
+  exit;
 }
 
-$check = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+$check = $pdo->prepare("SELECT id FROM users WHERE email=? LIMIT 1");
 $check->execute([$email]);
 if ($check->fetch()) {
-    die("Email already exists");
+  header("Location: /SENG321/login_part/index.php?tab=register&error=" . urlencode("Email already exists."));
+  exit;
 }
 
-$role = strtoupper($role); 
+/* role whitelist (registerda zaten admin yok ama yine de güvenlik) */
+if (!in_array($role, ['INSTRUCTOR','LEARNER'], true)) $role = 'LEARNER';
 
-if (!in_array($role, ['ADMIN','INSTRUCTOR','LEARNER'])) {
-    $role = 'LEARNER';
-}
-$plainPassword = $_POST['password'];
-$hash = password_hash($plainPassword, PASSWORD_DEFAULT);
+$hash = password_hash($password, PASSWORD_DEFAULT);
+$stmt = $pdo->prepare("INSERT INTO users (name,email,password_hash,role,active) VALUES (?,?,?,?,1)");
+$stmt->execute([$name,$email,$hash,$role]);
 
-$stmt = $pdo->prepare("
-  INSERT INTO users (name, email, role, password_hash, password_plain)
-  VALUES (?, ?, ?, ?, ?)
-");
-$stmt->execute([$name, $email, $role, $hash, $plainPassword]);
-
-$password_hash = password_hash($password, PASSWORD_DEFAULT);
-
-$stmt = $pdo->prepare("
-    INSERT INTO users
-    (name, email, password_hash, role, active)
-    VALUES (?, ?, ?, ?, 1)
-");
-
-$stmt->execute([
-    $name,
-    $email,
-    $password_hash,
-    $role
-]);
-
-echo "REGISTER SUCCESS";
+/* ✅ başarı: login tab'ına dön + email doldur */
+header("Location: /SENG321/login_part/index.php?tab=login&registered=1&email=" . urlencode($email));
 exit;
