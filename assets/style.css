@@ -284,3 +284,191 @@ input:focus {
     outline: none;
     border-color: var(--primary-color);
 }
+/* --- Manage Users toolbar (fix) --- */
+.users-toolbar{
+  display:flex;
+  align-items:baseline;          /* Manage Users ile aynı hizaya yakın */
+  justify-content:space-between;
+  margin: 0 0 14px 0;            /* başlığa yapışık olsun */
+}
+
+.users-actions{
+  display:flex;
+  gap:12px;
+}
+
+/* butonlar aynı çizgide dursun */
+.btn-sm{
+  padding:6px 12px;
+  font-size:0.9rem;
+  line-height:1;
+}
+
+/* details/summary default okunu kaldır */
+.filter-dd summary{
+  list-style:none;
+}
+.filter-dd summary::-webkit-details-marker{
+  display:none;
+}
+
+/* filter butonu */
+.filter-btn{
+  cursor:pointer;
+  user-select:none;
+  padding:6px 12px;
+  border-radius:8px;
+  background:rgba(255,255,255,0.08);
+  line-height:1;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+
+/* caret döndürme (açılınca yukarı baksın) */
+.filter-dd[open] .caret{
+  transform: rotate(180deg);
+}
+.caret{
+  display:inline-block;
+  transition: transform .15s ease;
+}
+
+/* menü */
+.filter-menu{
+  position:absolute;
+  right:0;
+  top:120%;
+  min-width:160px;
+  background:rgba(20,25,40,.95);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:10px;
+  padding:6px;
+  z-index:50;
+}
+.filter-dd{ position:relative; }
+
+.filter-menu a{
+  display:block;
+  padding:8px 10px;
+  text-decoration:none;
+  font-size:0.9rem;
+}
+.filter-menu a:hover{
+  background:rgba(255,255,255,0.08);
+  border-radius:6px;
+}
+/* details default triangle'ı kapat */
+details.filter-dd > summary {
+  list-style: none;
+}
+details.filter-dd > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* summary buton gibi */
+.filter-dd {
+  position: relative;
+  display: inline-block;
+}
+
+.filter-btn {
+  cursor: pointer;
+  user-select: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.08);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* caret animasyon */
+.caret {
+  display: inline-block;
+  transition: transform .15s ease;
+}
+.filter-dd[open] .caret {
+  transform: rotate(180deg);
+}
+
+/* dropdown menü */
+.filter-menu {
+  position: absolute;
+  right: 0;
+  top: 120%;
+  min-width: 180px;
+  background: rgba(20,25,40,.95);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 10px;
+  padding: 6px;
+  z-index: 9999;
+}
+
+/* menü öğeleri ALT ALTA */
+.filter-menu a {
+  display: block;
+  padding: 8px 10px;
+  text-decoration: none;
+  border-radius: 6px;
+}
+
+.filter-menu a:hover {
+  background: rgba(255,255,255,0.08);
+}
+/* === Dropdown Menu (Assessments) === */
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown-toggle {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.arrow {
+  transition: transform 0.2s ease;
+}
+
+.dropdown.open .arrow {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 105%;
+  left: 0;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid #334155;
+  border-radius: 8px;
+  min-width: 180px;
+  z-index: 999;
+  padding: 6px 0;
+}
+
+.dropdown.open .dropdown-menu {
+  display: block;
+}
+
+.dropdown-menu li a {
+  display: block;
+  padding: 6px 14px;
+  line-height: 1.2;
+  color: #e5e7eb;
+  text-decoration: none;
+}
+
+.dropdown-menu li a:hover {
+  background: rgba(56, 189, 248, 0.15);
+  padding-left: 18px;   /* hover’da hafif kayma efekti */
+  transition: all 0.15s ease;
+}
+

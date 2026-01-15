@@ -60,12 +60,21 @@ if ($role === "admin") {
             <li><a href="<?php echo $path_prefix; ?>pages/todo.php" class="<?php echo (isset($page) && $page === 'todo') ? 'active' : ''; ?>">To-Do List</a></li>
             <li><a href="<?php echo $path_prefix; ?>pages/recommendations.php" class="<?php echo (isset($page) && $page === 'ai') ? 'active' : ''; ?>">AI Coach</a></li>
 
-            <li><a href="<?php echo $path_prefix; ?>pages/listening.php" class="<?php echo (isset($page) && $page === 'listening') ? 'active' : ''; ?>">Listening</a></li>
-            <li><a href="<?php echo $path_prefix; ?>pages/speaking.php" class="<?php echo (isset($page) && $page === 'speaking') ? 'active' : ''; ?>">Speaking</a></li>
-            <li><a href="<?php echo $path_prefix; ?>pages/writing.php" class="<?php echo (isset($page) && $page === 'writing') ? 'active' : ''; ?>">Writing</a></li>
-            <li><a href="<?php echo $path_prefix; ?>pages/vocabulary.php" class="<?php echo ($page == 'vocabulary') ? 'active' : ''; ?>">Vocabulary</a></li>
-                    <li><a href="<?php echo $path_prefix; ?>pages/grammar.php" class="<?php echo ($page == 'grammar') ? 'active' : ''; ?>">Grammar</a></li>
-                    <li><a href="<?php echo $path_prefix; ?>pages/reading.php" class="<?php echo ($page == 'reading') ? 'active' : ''; ?>">Reading</a></li>
+            <li class="dropdown">
+  <button class="dropdown-toggle">
+    Assessments <span class="arrow">▾</span>
+  </button>
+
+  <ul class="dropdown-menu">
+    <li><a href="<?php echo $path_prefix; ?>pages/listening.php">Listening</a></li>
+    <li><a href="<?php echo $path_prefix; ?>pages/speaking.php">Speaking</a></li>
+    <li><a href="<?php echo $path_prefix; ?>pages/writing.php">Writing</a></li>
+    <li><a href="<?php echo $path_prefix; ?>pages/vocabulary.php">Vocabulary</a></li>
+    <li><a href="<?php echo $path_prefix; ?>pages/grammar.php">Grammar</a></li>
+    <li><a href="<?php echo $path_prefix; ?>pages/reading.php">Reading</a></li>
+  </ul>
+</li>
+
             <li><a href="<?php echo $path_prefix; ?>pages/profile.php" class="<?php echo (isset($page) && $page === 'profile') ? 'active' : ''; ?>">Profile</a></li>
             <li><a href="<?php echo $base; ?>/login_part/logout.php">Logout</a></li>
 

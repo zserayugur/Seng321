@@ -2,7 +2,7 @@
 // includes/auth_guard.php
 session_start();
 if (!isset($_SESSION["user"])) {
-header("Location: /language-platform/includes/login.php");
+header("Location: /Seng321/includes/login.php");
   exit;
 }
 
