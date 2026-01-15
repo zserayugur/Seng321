@@ -470,4 +470,26 @@ details.filter-dd > summary::-webkit-details-marker {
   padding-left: 18px;   /* hover’da hafif kayma efekti */
   transition: all 0.15s ease;
 }
+/* dropdown içindeki listelerin kendi boşluklarını sıfırla */
+.dropdown-menu {
+  padding: 6px 0;
+}
+
+.dropdown-menu ul {
+  margin: 0;
+  padding: 0;
+}
+
+.dropdown-menu li {
+  list-style: none;
+  margin: 0;        /* <-- ASIL ÖNEMLİ */
+  padding: 0;       /* <-- ASIL ÖNEMLİ */
+}
+
+/* linklerin boşluğunu da kontrol et */
+.dropdown-menu li a {
+  display: block;
+  padding: 6px 14px;     /* bunu istersen 5px yap */
+  line-height: 1.1;
+}
 
