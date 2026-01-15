@@ -1,4 +1,4 @@
--- phpMyAdmin SQL Dump
+-- phpMyAdmin SQL Dump 
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
@@ -213,9 +213,14 @@ CREATE TABLE `users` (
   `password_plain` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `assignments` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+--
+-- Tablo için tablo yapısı `assignments`
+--
+
+CREATE TABLE `assignments` (
+  `id` int(11) NOT NULL,
   `instructor_id` int(11) NOT NULL,
   `student_id` int(11) NOT NULL,
   `type` enum('writing','speaking','listening','vocabulary','grammar','reading') NOT NULL,
@@ -223,14 +228,7 @@ CREATE TABLE IF NOT EXISTS `assignments` (
   `title` varchar(255) DEFAULT NULL,
   `due_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `completed_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_student_status` (`student_id`,`status`),
-  KEY `idx_instructor` (`instructor_id`),
-  CONSTRAINT `fk_assign_instructor`
-    FOREIGN KEY (`instructor_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_assign_student`
-    FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  `completed_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -332,6 +330,14 @@ ALTER TABLE `users`
   ADD KEY `idx_users_reset_token` (`reset_token`);
 
 --
+-- Tablo için indeksler `assignments`
+--
+ALTER TABLE `assignments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_student_status` (`student_id`,`status`),
+  ADD KEY `idx_instructor` (`instructor_id`);
+
+--
 -- Dökümü yapılmış tablolar için AUTO_INCREMENT değeri
 --
 
@@ -402,6 +408,12 @@ ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
+-- Tablo için AUTO_INCREMENT değeri `assignments`
+--
+ALTER TABLE `assignments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- Dökümü yapılmış tablolar için kısıtlamalar
 --
 
@@ -455,6 +467,14 @@ ALTER TABLE `assessment_uploads`
 ALTER TABLE `instructor_invite_codes`
   ADD CONSTRAINT `fk_invite_created_by` FOREIGN KEY (`created_by_admin_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_invite_used_by` FOREIGN KEY (`used_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Tablo kısıtlamaları `assignments`
+--
+ALTER TABLE `assignments`
+  ADD CONSTRAINT `fk_assign_instructor` FOREIGN KEY (`instructor_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_assign_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
