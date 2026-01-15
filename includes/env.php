@@ -8,6 +8,7 @@ $envFile = __DIR__ . '/../.env';
 
 if (!file_exists($envFile)) {
     return;
+<<<<<<< HEAD
 }
 
 $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -30,4 +31,3 @@ foreach ($lines as $line) {
 
     putenv("$key=$value");
     $_ENV[$key] = $value;
-}
