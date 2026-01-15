@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Anamakine: localhost
--- Üretim Zamanı: 15 Oca 2026, 15:21:37
+-- Üretim Zamanı: 15 Oca 2026, 19:46:53
 -- Sunucu sürümü: 10.4.28-MariaDB
 -- PHP Sürümü: 8.2.4
 
@@ -118,6 +118,16 @@ CREATE TABLE `assessment_attempts` (
   `meta_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`meta_json`))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Tablo döküm verisi `assessment_attempts`
+--
+
+INSERT INTO `assessment_attempts` (`id`, `user_id`, `type`, `part`, `status`, `started_at`, `submitted_at`, `duration_seconds`, `meta_json`) VALUES
+(1, 4, 'speaking', NULL, 'in_progress', '2026-01-15 19:05:48', NULL, 150, '{\"prep_seconds\":10,\"questions_count\":5}'),
+(2, 4, 'speaking', NULL, 'in_progress', '2026-01-15 19:06:24', NULL, 150, '{\"prep_seconds\":10,\"questions_count\":5}'),
+(3, 4, 'speaking', NULL, 'in_progress', '2026-01-15 19:06:49', NULL, 150, '{\"prep_seconds\":10,\"questions_count\":5}'),
+(4, 4, 'speaking', NULL, 'in_progress', '2026-01-15 19:08:12', NULL, 150, '{\"prep_seconds\":10,\"questions_count\":5}');
+
 -- --------------------------------------------------------
 
 --
@@ -211,7 +221,9 @@ INSERT INTO `users` (`id`, `name`, `education_level`, `email`, `password_hash`, 
 (1, 'Admin', NULL, 'admin@test.com', '$2y$10$ddqojy.OdgZfyWh8ki2G8OIXi3YIr2oPd/T5vtQGWrN83EJ9X7xOG', 'ADMIN', NULL, NULL, 1, '2025-12-30 23:45:04', NULL),
 (4, 'zeynep', NULL, 'zeynep@seray.com', '$2y$10$FPKg.Zm2nLAtvXeSGBBC0eKXeUP.mkpdb3XyYlHJehR59uHcXJOu6', 'LEARNER', NULL, NULL, 1, '2026-01-15 14:07:24', '123456'),
 (6, 'sinem', NULL, 'sinem@sinem.com', '$2y$10$gDteXXVWnB23Q1e.zrR6B.7qBlX79osHt5Qke53KNbENNcj9wdzP.', 'ADMIN', NULL, NULL, 1, '2026-01-15 14:20:02', '123456'),
-(8, 'admin', NULL, 'admin@testadmin.com', '$2y$10$zqCHi0vVvbETSGGYTrT6u.dpKTlYkS2.as4IW0fapMdd5yDC8MjC.', 'ADMIN', NULL, NULL, 1, '2026-01-15 14:21:01', '123abc');
+(8, 'admin', NULL, 'admin@testadmin.com', '$2y$10$zqCHi0vVvbETSGGYTrT6u.dpKTlYkS2.as4IW0fapMdd5yDC8MjC.', 'ADMIN', NULL, NULL, 1, '2026-01-15 14:21:01', '123abc'),
+(10, 'user', NULL, 'test@test.com', '$2y$10$tuiCTC2.kN0HTPrkY1/4IeWAreuY71Y6WyxNs/1QKUJVRfFR6hYUW', 'LEARNER', NULL, NULL, 1, '2026-01-15 14:34:46', '123456'),
+(13, 'Seray', NULL, 'kakaolu@puding.com', '$2y$10$VUGYutxXTXuYcy6w.wAhb.6apTdN8dvooDXdYxVCBSXMRlFuAV8Hm', 'LEARNER', NULL, NULL, 1, '2026-01-15 18:44:25', 'Pass12345');
 
 --
 -- Dökümü yapılmış tablolar için indeksler
@@ -337,7 +349,7 @@ ALTER TABLE `assessment_answers`
 -- Tablo için AUTO_INCREMENT değeri `assessment_attempts`
 --
 ALTER TABLE `assessment_attempts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- Tablo için AUTO_INCREMENT değeri `assessment_results`
@@ -367,7 +379,7 @@ ALTER TABLE `resources`
 -- Tablo için AUTO_INCREMENT değeri `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- Dökümü yapılmış tablolar için kısıtlamalar
