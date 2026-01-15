@@ -1,7 +1,7 @@
 </main>
 <footer style="margin-top: 50px; text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.9rem;">
     &copy;
-    <?php echo date("Y"); ?> LinguaPro AI Learning Systems. All rights reserved.
+    <?php echo date("Y"); ?> LevelUp English AI Learning Systems.
 </footer>
 </div>
 
