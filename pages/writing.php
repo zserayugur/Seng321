@@ -51,7 +51,6 @@ Now create a similar prompt for {$cefr} level:
     exit;
 }
 ?>
-<h2>Writing Essay (250–450 words, 50 min)</h2>
 
 <?php if (!$prompt): ?>
     <section class="card" style="margin-top:16px;">
@@ -90,74 +89,82 @@ Now create a similar prompt for {$cefr} level:
 <?php endif; ?>
 
 <script>
-let attemptId = null, secondsLeft = 50*60, timer = null;
+  // --- Variables ---
+  let currentTopic = "";
 
-function formatTime(s){
-  const m = Math.floor(s/60), r = s % 60;
-  return String(m).padStart(2,'0') + ":" + String(r).padStart(2,'0');
-}
-function countWords(t){
-  return (t.trim().match(/\S+/g) || []).length;
-}
+  const btnGetTopic = document.getElementById('btnGetTopic');
+  const topicBox = document.getElementById('topicBox');
+  const topicText = document.getElementById('topicText');
+  const writingArea = document.getElementById('writingArea');
+  const essayInput = document.getElementById('essayInput');
+  const wordCountSpan = document.getElementById('wordCount');
+  const btnSubmit = document.getElementById('btnSubmit');
+  const resultArea = document.getElementById('resultArea');
 
-async function startAttempt(){
-  const fd = new FormData();
-  fd.append('type','writing');
+  // --- 1. Get Topic ---
+  btnGetTopic.addEventListener('click', async () => {
+    btnGetTopic.disabled = true;
+    btnGetTopic.textContent = "Generating Topic...";
 
-  const res = await fetch('api/start_attempt.php', { method:'POST', body:fd });
-  const data = await res.json();
+    try {
+      const res = await fetch('api/get_writing_topic.php');
+      const data = await res.json();
 
-  attemptId = data.attempt_id ?? null;
-  if (!attemptId) throw new Error("attempt_id missing");
-}
+      if (data.error) throw new Error(data.error);
 
-function startTimer(){
-  secondsLeft = 50*60;
-  document.getElementById('timeLeft').textContent = formatTime(secondsLeft);
+      currentTopic = data.topic;
+      topicText.textContent = currentTopic;
+      topicBox.style.display = 'block';
+      btnGetTopic.style.display = 'none';
+      writingArea.style.display = 'block';
 
-  timer = setInterval(async () => {
-    secondsLeft--;
-    document.getElementById('timeLeft').textContent = formatTime(secondsLeft);
-
-    if (secondsLeft <= 0){
-      clearInterval(timer);
-      await submitEssay(true);
+    } catch (e) {
+      alert("Error fetching topic: " + e.message);
+      btnGetTopic.disabled = false;
+      btnGetTopic.textContent = "Generate Essay Topic";
     }
-  }, 1000);
-}
+  });
 
-async function saveEssay(){
-  const fd = new FormData();
-  fd.append('attempt_id', attemptId);
-  fd.append('question_index', 1);
-  fd.append('question_text', 'WRITING_ESSAY');
-  fd.append('answer_text', document.getElementById('essay').value);
-  await fetch('api/save_progress.php', { method:'POST', body:fd });
-}
+  // --- 2. Word Count ---
+  essayInput.addEventListener('input', () => {
+    const text = essayInput.value.trim();
+    const count = text ? text.split(/\s+/).length : 0;
+    wordCountSpan.textContent = count;
+  });
 
-async function submitEssay(isAuto=false){
-  const btn = document.getElementById('btnSubmit');
-  btn.disabled = true;
+  // --- 3. Submit & Evaluate ---
+  btnSubmit.addEventListener('click', async () => {
+    const text = essayInput.value.trim();
+    if (text.length < 50) {
+      alert("Your essay is too short. Please write at least a few sentences.");
+      return;
+    }
 
-  document.getElementById('status').textContent = isAuto ? "Auto-submitting..." : "Submitting...";
-  if (timer) clearInterval(timer);
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = "Analyzing Essay...";
 
-  try {
-    await saveEssay();
+    try {
+      const res = await fetch('api/evaluate_writing.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          topic: currentTopic,
+          text: text
+        }),
+        headers: { 'Content-Type': 'application/json' }
+      });
 
-    const fd2 = new FormData();
-    fd2.append('attempt_id', attemptId);
-    fd2.append('assignment_id', "<?= (int)($_GET['assignment_id'] ?? 0) ?>");
-    await fetch('api/submit_attempt.php', { method:'POST', body:fd2 });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
 
-    // ✅ Evaluate + send essay text
-    const fd3 = new FormData();
-    fd3.append('attempt_id', attemptId);
-    fd3.append('skill', 'writing');
-    fd3.append('text', document.getElementById('essay').value);
+      // Display Results
+      document.getElementById('resLevel').textContent = data.cefr || 'N/A';
+      document.getElementById('resScore').textContent = (data.score || 0) + '/100';
+      document.getElementById('resFeedback').textContent = data.feedback || 'No specific feedback provided.';
+      document.getElementById('resCorrections').textContent = data.correction_points || 'No specific corrections found.';
 
-    const ev = await fetch('api/evaluate_attempt.php', { method:'POST', body:fd3 });
-    const evData = await ev.json();
+      resultArea.style.display = 'block';
+      writingArea.style.display = 'none'; // Hide writing area to focus on result
+      resultArea.scrollIntoView({ behavior: 'smooth' });
 
     if (evData.ok && evData.evaluation) {
       const eval = evData.evaluation;
@@ -232,5 +239,4 @@ if (essayEl) {
 
 document.getElementById('btnSubmit')?.addEventListener('click', () => submitEssay(false));
 </script>
-
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

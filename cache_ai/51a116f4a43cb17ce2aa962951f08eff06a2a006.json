@@ -1,0 +1,41 @@
+{
+  "report_title": "Listening Comprehension Feedback Report",
+  "test_topic": "PHP Overview",
+  "student_performance": {
+    "score": 95,
+    "max_score": 100,
+    "overall_feedback": "Excellent performance on the listening task. You captured the key points accurately. Minor suggestion for improvement on specificity in the first answer."
+  },
+  "question_analysis": [
+    {
+      "question_number": 1,
+      "question": "What is PHP?",
+      "student_answer": "PHP is a server scripting language.",
+      "correct_answer_elements": [
+        "It is a widely-used, open-source general-purpose scripting language.",
+        "It is especially suited for web development and can be embedded into HTML."
+      ],
+      "feedback": "Your answer is correct in essence, as PHP is indeed a server-side scripting language. To achieve full marks, try to include more detail if the audio provided it, such as mentioning its use for web development or that it is open-source.",
+      "score_awarded": 25,
+      "max_points": 25
+    },
+    {
+      "question_number": 2,
+      "question": "Is it cool?",
+      "student_answer": "Yes",
+      "correct_answer_elements": [
+        "The audio likely stated that PHP is popular, widely used, or highly effective (which implies 'cool' in context)."
+      ],
+      "feedback": "Perfectly answered based on the likely tone of the audio. You correctly identified the speaker's subjective assessment.",
+      "score_awarded": 25,
+      "max_points": 25
+    }
+  ],
+  "grading_notes": {
+    "total_points_awarded": 50,
+    "total_possible_points": 50,
+    "mistake_explanation": "No significant mistakes were made. The first answer was slightly brief but factually correct. For future tests, focus on capturing the complete definition or description provided in the audio.",
+    "encouragement": "Keep up the fantastic listening skills! You demonstrate a strong ability to comprehend spoken English."
+  },
+  "final_score_out_of_100": "95"
+}

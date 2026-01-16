@@ -3,11 +3,11 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/auth_guard.php';
 
-function getTestResults(int $limit = 8): array
+function getTestResults(int $limit = 10): array
 {
-    if (session_status() === PHP_SESSION_NONE) session_start();
-    $uid = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : 0;
-    if ($uid <= 0) return [];
+    if (session_status() === PHP_SESSION_NONE)
+        session_start();
+    $uid = isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : 0;
 
     global $pdo;
     if (!isset($pdo)) {

@@ -46,7 +46,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'start
 $state = $_SESSION[$sessionKey] ?? null;
 ?>
 
-<h2>Listening Test (Part 1 & 2)</h2>
+<div class="dashboard-grid" style="grid-template-columns: 1fr; max-width: 900px; margin: 0 auto;">
+  <section class="card">
+    <h1>AI Listening Test</h1>
+    <p>Listen to a generated audio script (approx. 3-4 minutes) and answer open-ended comprehension questions. Receive
+      instant AI grading and feedback.</p>
 
 <?php if (!$state): ?>
     <section class="card" style="margin-top:16px;">

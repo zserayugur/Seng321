@@ -1,5 +1,7 @@
 <?php
-if (!isset($path_prefix)) { $path_prefix = ''; }
+if (!isset($path_prefix)) {
+  $path_prefix = '';
+}
 
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
@@ -9,7 +11,8 @@ $base = "/Seng321";
 
 // role normalize
 $role = strtolower(trim($_SESSION["user"]["role"] ?? "learner"));
-if ($role === "student") $role = "learner";
+if ($role === "student")
+  $role = "learner";
 
 // dashboard url
 if ($role === "admin") {
@@ -22,13 +25,14 @@ if ($role === "admin") {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <div class="logo-wrapper">
-  
 
-</div>
+
+  </div>
 
 
   <!-- Google Fonts -->
@@ -39,6 +43,7 @@ if ($role === "admin") {
   <!-- Chart.js for Graphs -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <title>LevelUP English</title>
   <link rel="stylesheet" href="<?php echo $path_prefix; ?>assets/style.css">
 </head>
 
@@ -46,63 +51,70 @@ if ($role === "admin") {
   <div class="container">
     <header class="main-header">
       <a href="<?php echo $path_prefix; ?>pages/home.php">
-        <img 
-            src="/Seng321/assets/logo2.png" 
-            alt="LevelUP English"
-            style="height: 120px; width: 130px;">
-    </a>
+        <img src="/Seng321/assets/logo2.png" alt="LevelUP English" style="height: 120px; width: 130px;">
+      </a>
 
       <nav>
         <ul class="nav-links">
 
           <!-- Dashboard (her rolde var) -->
           <li>
-            <a href="<?php echo $dashboardUrl; ?>" class="<?php echo (isset($page) && $page === 'dashboard') ? 'active' : ''; ?>">
+            <a href="<?php echo $dashboardUrl; ?>"
+              class="<?php echo (isset($page) && $page === 'dashboard') ? 'active' : ''; ?>">
               Dashboard
             </a>
           </li>
 
           <?php if ($role === "learner"): ?>
 
-            <li><a href="<?php echo $path_prefix; ?>pages/cefr.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'cefr') ? 'active' : ''; ?>">CEFR & Predictions</a></li>
-            <li><a href="<?php echo $path_prefix; ?>pages/reports.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'reports') ? 'active' : ''; ?>">Reports & Analytics</a></li>
-            <li><a href="<?php echo $path_prefix; ?>pages/todo.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'todo') ? 'active' : ''; ?>">To-Do List</a></li>
-            <li><a href="<?php echo $path_prefix; ?>pages/recommendations.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'ai') ? 'active' : ''; ?>">AI Coach</a></li>
-            <li><a href="<?php echo $path_prefix; ?>pages/join_class.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'join_class') ? 'active' : ''; ?>">Join Class</a></li>
+            <li><a href="<?php echo $path_prefix; ?>pages/cefr.php" style=" color: #e692beff;"
+                class="<?php echo (isset($page) && $page === 'cefr') ? 'active' : ''; ?>">CEFR & Predictions</a></li>
+            <li><a href="<?php echo $path_prefix; ?>pages/reports.php" style=" color: #e692beff;"
+                class="<?php echo (isset($page) && $page === 'reports') ? 'active' : ''; ?>">Reports & Analytics</a></li>
+            <li><a href="<?php echo $path_prefix; ?>pages/todo.php" style=" color: #e692beff;"
+                class="<?php echo (isset($page) && $page === 'todo') ? 'active' : ''; ?>">To-Do List</a></li>
+            <li><a href="<?php echo $path_prefix; ?>pages/recommendations.php" style=" color: #e692beff;"
+                class="<?php echo (isset($page) && $page === 'ai') ? 'active' : ''; ?>">AI Coach</a></li>
+
 
             <li class="dropdown">
-  <button class="dropdown-toggle">
-    Assessments <span class="arrow">▾</span>
-  </button>
+              <button class="dropdown-toggle">
+                Assessments <span class="arrow">▾</span>
+              </button>
 
-  <ul class="dropdown-menu">
-    <li><a href="<?php echo $path_prefix; ?>pages/listening.php">Listening</a></li>
-    <li><a href="<?php echo $path_prefix; ?>pages/speaking.php">Speaking</a></li>
-    <li><a href="<?php echo $path_prefix; ?>pages/writing.php">Writing</a></li>
-    <li><a href="<?php echo $path_prefix; ?>pages/vocabulary.php">Vocabulary</a></li>
-    <li><a href="<?php echo $path_prefix; ?>pages/grammar.php">Grammar</a></li>
-    <li><a href="<?php echo $path_prefix; ?>pages/reading.php">Reading</a></li>
-  </ul>
-</li>
+              <ul class="dropdown-menu">
+                <li><a href="<?php echo $path_prefix; ?>pages/listening.php">Listening</a></li>
+                <li><a href="<?php echo $path_prefix; ?>pages/speaking.php">Speaking</a></li>
+                <li><a href="<?php echo $path_prefix; ?>pages/writing.php">Writing</a></li>
+                <li><a href="<?php echo $path_prefix; ?>pages/vocabulary.php">Vocabulary</a></li>
+                <li><a href="<?php echo $path_prefix; ?>pages/grammar.php">Grammar</a></li>
+                <li><a href="<?php echo $path_prefix; ?>pages/reading.php">Reading</a></li>
+              </ul>
+            </li>
 
-            <li><a href="<?php echo $path_prefix; ?>pages/profile.php" class="<?php echo (isset($page) && $page === 'profile') ? 'active' : ''; ?>">Profile</a></li>
+            <li><a href="<?php echo $path_prefix; ?>pages/profile.php"
+                class="<?php echo (isset($page) && $page === 'profile') ? 'active' : ''; ?>">Profile</a></li>
             <li><a href="<?php echo $base; ?>/login_part/logout.php">Logout</a></li>
 
 
           <?php elseif ($role === "instructor"): ?>
 
-            <li><a href="<?php echo $path_prefix; ?>pages/reports.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'reports') ? 'active' : ''; ?>">Class Reports</a></li>
-            <li><a href="<?php echo $path_prefix; ?>pages/review.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'review') ? 'active' : ''; ?>">Review Answers</a></li>
+            <li><a href="<?php echo $path_prefix; ?>pages/reports.php" style=" color: #e692beff;"
+                class="<?php echo (isset($page) && $page === 'reports') ? 'active' : ''; ?>">Class Reports</a></li>
+            <li><a href="<?php echo $path_prefix; ?>pages/review.php"
+                class="<?php echo (isset($page) && $page === 'review') ? 'active' : ''; ?>">Review Answers</a></li>
 
 
             <!-- Eğer bu dosyalar sende yoksa bu 2 satırı sil veya dosyaları oluştur -->
             <li><a href="<?php echo $path_prefix; ?>/Seng321/dashboard/instructor_assignments.php" style=" color: #e692beff;">Assignments</a></li>
             <li><a href="<?php echo $base; ?>/instructor/class_codes.php" style=" color: #e692beff;">Class Codes</a></li>
+            <li><a href="<?php echo $base; ?>/assignments/" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'requests') ? 'active' : ''; ?>">Assignments</a></li>
 
 
             
 
-            <li><a href="<?php echo $path_prefix; ?>pages/profile.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'profile') ? 'active' : ''; ?>">Profile</a></li>
+            <li><a href="<?php echo $path_prefix; ?>pages/profile.php" style=" color: #e692beff;"
+                class="<?php echo (isset($page) && $page === 'profile') ? 'active' : ''; ?>">Profile</a></li>
             <li><a href="<?php echo $base; ?>/login_part/logout.php" style=" color: #e692beff;">Logout</a></li>
 
           <?php else: ?>
