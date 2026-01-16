@@ -22,7 +22,8 @@ if (empty($apiKey)) {
     error_log("AI Service Error: Gemini API Key not found in .gemini_key or environment.");
 }
 
-define('GEMINI_API_KEY', $apiKey);
+define('GEMINI_API_KEY', $_ENV['GEMINI_API_KEY'] ?? '');
+
 
 /* ============================================================
    AI RECOMMENDATIONS
@@ -82,7 +83,7 @@ function fetchAITestQuestions(string $skill, string $cefr, int $count = 20): arr
         $prompt = "
 You are creating an English reading test.
 
-First write a CEFR {$cefr} level reading passage of 120–180 words.
+First write a long and detailed CEFR {$cefr} level reading passage of 350–500 words.
 
 Then create {$count} multiple choice questions based ONLY on that passage.
 
@@ -180,7 +181,7 @@ Format:
 
 function geminiCall(string $prompt): string
 {
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" . GEMINI_API_KEY;
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . GEMINI_API_KEY;
 
     $payload = [
         "contents" => [["parts" => [["text" => $prompt]]]]
