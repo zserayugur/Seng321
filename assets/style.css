@@ -554,4 +554,15 @@ details.filter-dd > summary::-webkit-details-marker {
 .users-subbar{
   margin:10px 0 14px 0; /* filter ile tablo arası */
 }
+.form-input {
+    width: 100%;
+    padding: 14px 16px;          /* daha dolgun */
+    border-radius: 16px;         /* ← round hissi */
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.06);
+    color: #ffffff;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.25s ease;
+}
 
