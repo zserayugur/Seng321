@@ -1,4 +1,5 @@
 <?php
+// includes/ai_service.php
 require_once __DIR__ . '/env.php';
 require_once 'mock_data.php';
 
@@ -22,8 +23,7 @@ if (empty($apiKey)) {
     error_log("AI Service Error: Gemini API Key not found in .gemini_key or environment.");
 }
 
-define('GEMINI_API_KEY', $_ENV['GEMINI_API_KEY'] ?? '');
-
+define('GEMINI_API_KEY', $apiKey);
 
 /* ============================================================
    AI RECOMMENDATIONS
@@ -83,7 +83,7 @@ function fetchAITestQuestions(string $skill, string $cefr, int $count = 20): arr
         $prompt = "
 You are creating an English reading test.
 
-First write a long and detailed CEFR {$cefr} level reading passage of 350–500 words.
+First write a CEFR {$cefr} level reading passage of 120–180 words.
 
 Then create {$count} multiple choice questions based ONLY on that passage.
 
@@ -167,11 +167,11 @@ Format:
     }
 
     return [
-        "skill" => $skill,
-        "cefr" => $cefr,
-        "passage" => $passage,
-        "questions" => $normalized,
-        "source" => "gemini"
+        'skill' => $skill,
+        'cefr' => $cefr,
+        'passage' => ($skill === 'reading') ? ($aiData['passage'] ?? '') : null,
+        'questions' => $questions,
+        'source' => 'gemini'
     ];
 }
 
@@ -181,90 +181,79 @@ Format:
 
 function geminiCall(string $prompt): string
 {
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemma-3-1b-it:generateContent?key=" . GEMINI_API_KEY;
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" . GEMINI_API_KEY;
 
     $payload = [
-        "contents" => [["parts" => [["text" => $prompt]]]]
+        'contents' => [[
+            'parts' => [['text' => $prompt]]
+        ]]
     ];
 
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode($payload),
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => false
-    ]);
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 
     $response = curl_exec($ch);
-    $curlError = curl_error($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if (curl_errno($ch)) {
+        $err = curl_error($ch);
+        curl_close($ch);
+        return [
+            'cefr' => $knownCefr ?: 'B1',
+            'ielts_estimate' => 5.5,
+            'toefl_estimate' => 72,
+            'diagnostic' => 'Connection error: ' . $err,
+            'strengths' => [],
+            'improvements' => [],
+            'next_steps' => [],
+            'word_count' => $wordCount,
+            'source' => 'fallback'
+        ];
+    }
     curl_close($ch);
 
-    if ($curlError) {
-        $msg = "Gemini cURL Error: " . $curlError;
-        error_log($msg);
-        return '{"error": "' . $msg . '"}'; // Return error as JSON so caller sees it
-    }
-
-    if ($httpCode !== 200) {
-        $msg = "Gemini HTTP Error: {$httpCode}. Response: " . substr($response, 0, 200);
-        error_log($msg);
-        return '{"error": "' . $msg . '"}';
-    }
-
-    $json = json_decode($response, true);
-
-    if (!isset($json['candidates'][0]['content']['parts'][0]['text'])) {
-        error_log("Gemini API unexpected response: " . substr($response, 0, 500));
-        return $response; // Return raw so we can debug
-    }
-
-    return $json['candidates'][0]['content']['parts'][0]['text'];
-}
-
-/* ============================================================
-   NORMALIZER
-============================================================ */
-
-function normalizeQuestionsForUI($questions)
-{
-    $out = [];
-
-    foreach ($questions as $q) {
-        $stem = $q["stem"] ?? $q["question"] ?? "";
-        $choices = $q["choices"] ?? $q["options"] ?? [];
-        $ans = $q["answer_index"] ?? $q["answer"] ?? 0;
-
-        if (is_string($ans) && preg_match('/^[A-D]$/i', $ans)) {
-            $ans = ord(strtoupper($ans)) - 65;
-        }
-
-        $out[] = [
-            "stem" => $stem,
-            "choices" => array_values($choices),
-            "answer_index" => intval($ans)
+    $decoded = json_decode($response, true);
+    if (isset($decoded['error'])) {
+        $msg = $decoded['error']['message'] ?? 'Unknown Gemini error';
+        return [
+            'cefr' => $knownCefr ?: 'B1',
+            'ielts_estimate' => 5.5,
+            'toefl_estimate' => 72,
+            'diagnostic' => 'Gemini API error: ' . $msg,
+            'strengths' => [],
+            'improvements' => [],
+            'next_steps' => [],
+            'word_count' => $wordCount,
+            'source' => 'fallback'
         ];
     }
 
-    return $out;
-}
+    $rawText = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? '';
+    $rawText = str_replace(["```json", "```"], "", $rawText);
+    $ai = json_decode(trim($rawText), true);
 
-/* ============================================================
-   FALLBACK
-============================================================ */
-
-function getFallbackTestQuestions($skill, $cefr, $count)
-{
-    $q = [];
-    for ($i = 1; $i <= $count; $i++) {
-        $q[] = [
-            "stem" => "Mock Question {$i} for {$skill} ({$cefr})",
-            "choices" => ["Option A", "Option B", "Option C", "Option D"],
-            "answer_index" => 0
+    if (!is_array($ai) || empty($ai['cefr'])) {
+        return [
+            'cefr' => $knownCefr ?: 'B1',
+            'ielts_estimate' => 5.5,
+            'toefl_estimate' => 72,
+            'diagnostic' => 'Parse error. Raw: ' . substr(trim($rawText), 0, 140),
+            'strengths' => [],
+            'improvements' => [],
+            'next_steps' => [],
+            'word_count' => $wordCount,
+            'source' => 'fallback'
         ];
     }
+=======
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' . trim(GEMINI_API_KEY);
+>>>>>>> Stashed changes
 
     $data = [
         "questions" => $q,
