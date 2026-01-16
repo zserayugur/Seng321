@@ -2,10 +2,10 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Anamakine: localhost
--- Üretim Zamanı: 15 Oca 2026, 19:46:53
--- Sunucu sürümü: 10.4.28-MariaDB
--- PHP Sürümü: 8.2.4
+-- Anamakine: 127.0.0.1:3307
+-- Üretim Zamanı: 16 Oca 2026, 03:36:07
+-- Sunucu sürümü: 10.4.32-MariaDB
+-- PHP Sürümü: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -123,10 +123,7 @@ CREATE TABLE `assessment_attempts` (
 --
 
 INSERT INTO `assessment_attempts` (`id`, `user_id`, `type`, `part`, `status`, `started_at`, `submitted_at`, `duration_seconds`, `meta_json`) VALUES
-(1, 4, 'speaking', NULL, 'in_progress', '2026-01-15 19:05:48', NULL, 150, '{\"prep_seconds\":10,\"questions_count\":5}'),
-(2, 4, 'speaking', NULL, 'in_progress', '2026-01-15 19:06:24', NULL, 150, '{\"prep_seconds\":10,\"questions_count\":5}'),
-(3, 4, 'speaking', NULL, 'in_progress', '2026-01-15 19:06:49', NULL, 150, '{\"prep_seconds\":10,\"questions_count\":5}'),
-(4, 4, 'speaking', NULL, 'in_progress', '2026-01-15 19:08:12', NULL, 150, '{\"prep_seconds\":10,\"questions_count\":5}');
+(1, 16, 'listening', 1, 'in_progress', '2026-01-16 01:43:12', NULL, 600, '{\"preview_seconds\":10,\"questions_count\":10,\"level\":\"intermediate_easy\"}');
 
 -- --------------------------------------------------------
 
@@ -159,6 +156,72 @@ CREATE TABLE `assessment_uploads` (
   `mime_type` varchar(64) NOT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tablo için tablo yapısı `assignments`
+--
+
+CREATE TABLE `assignments` (
+  `id` int(11) NOT NULL,
+  `class_id` int(11) NOT NULL,
+  `instructor_id` int(11) NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `description` text DEFAULT NULL,
+  `due_date` datetime DEFAULT NULL,
+  `is_published` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tablo için tablo yapısı `classes`
+--
+
+CREATE TABLE `classes` (
+  `id` int(11) NOT NULL,
+  `instructor_id` int(11) NOT NULL,
+  `title` varchar(160) NOT NULL,
+  `class_code` char(8) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Tablo döküm verisi `classes`
+--
+
+INSERT INTO `classes` (`id`, `instructor_id`, `title`, `class_code`, `is_active`, `created_at`) VALUES
+(1, 10, 'ABC', 'Q29VDEP3', 1, '2026-01-16 02:23:02');
+
+-- --------------------------------------------------------
+
+--
+-- Tablo için tablo yapısı `class_join_requests`
+--
+
+CREATE TABLE `class_join_requests` (
+  `id` int(11) NOT NULL,
+  `class_id` int(11) NOT NULL,
+  `student_id` int(11) NOT NULL,
+  `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `requested_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tablo için tablo yapısı `class_members`
+--
+
+CREATE TABLE `class_members` (
+  `id` int(11) NOT NULL,
+  `class_id` int(11) NOT NULL,
+  `student_id` int(11) NOT NULL,
+  `joined_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -196,6 +259,21 @@ CREATE TABLE `resources` (
 -- --------------------------------------------------------
 
 --
+-- Tablo için tablo yapısı `submissions`
+--
+
+CREATE TABLE `submissions` (
+  `id` int(11) NOT NULL,
+  `assignment_id` int(11) NOT NULL,
+  `student_id` int(11) NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  `original_name` varchar(255) NOT NULL,
+  `submitted_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Tablo için tablo yapısı `users`
 --
 
@@ -222,8 +300,13 @@ INSERT INTO `users` (`id`, `name`, `education_level`, `email`, `password_hash`, 
 (4, 'zeynep', NULL, 'zeynep@seray.com', '$2y$10$FPKg.Zm2nLAtvXeSGBBC0eKXeUP.mkpdb3XyYlHJehR59uHcXJOu6', 'LEARNER', NULL, NULL, 1, '2026-01-15 14:07:24', '123456'),
 (6, 'sinem', NULL, 'sinem@sinem.com', '$2y$10$gDteXXVWnB23Q1e.zrR6B.7qBlX79osHt5Qke53KNbENNcj9wdzP.', 'ADMIN', NULL, NULL, 1, '2026-01-15 14:20:02', '123456'),
 (8, 'admin', NULL, 'admin@testadmin.com', '$2y$10$zqCHi0vVvbETSGGYTrT6u.dpKTlYkS2.as4IW0fapMdd5yDC8MjC.', 'ADMIN', NULL, NULL, 1, '2026-01-15 14:21:01', '123abc'),
-(10, 'user', NULL, 'test@test.com', '$2y$10$tuiCTC2.kN0HTPrkY1/4IeWAreuY71Y6WyxNs/1QKUJVRfFR6hYUW', 'LEARNER', NULL, NULL, 1, '2026-01-15 14:34:46', '123456'),
-(13, 'Seray', NULL, 'kakaolu@puding.com', '$2y$10$VUGYutxXTXuYcy6w.wAhb.6apTdN8dvooDXdYxVCBSXMRlFuAV8Hm', 'LEARNER', NULL, NULL, 1, '2026-01-15 18:44:25', 'Pass12345');
+(10, 'Paşa', NULL, 'p@gmail.com', '$2y$10$n4s1T7NFVwddz5zYzKganeY35dOLwOlwI3UNBhKFNq1rzs8HYdTxa', 'INSTRUCTOR', NULL, NULL, 1, '2026-01-15 15:01:22', NULL),
+(12, 'Ali Veli', NULL, 'ali@test.com', '$2y$10$3C4kTEHGBEty5esKip7V0u8.mfqpIBCv0oxDtfwIOzxAjZEWlJ.Oy', 'LEARNER', NULL, NULL, 1, '2026-01-15 18:54:18', NULL),
+(13, 'Ayşe Demir', NULL, 'ayse@test.com', '$2y$10$guT/vfTXxNr4M0oKKI9z5ObWozO.3TNAl5YOKclChiLDCKqRtFPBS', 'INSTRUCTOR', NULL, NULL, 1, '2026-01-15 18:54:19', NULL),
+(14, 'Test Admin', NULL, 'testadmin@test.com', '$2y$10$PSZ0l3k.VG8v0E/SzTdOje2voReEKazYpCJuN/zdBrlhErp0WG47y', 'ADMIN', NULL, NULL, 1, '2026-01-15 18:54:19', NULL),
+(15, 'Gizem', NULL, 'gizem@gmail.com', '$2y$10$xaj4U/ahu1PYR0LUQWn9NeT/rFeGpdqgKeMSy7ELVFZgsCeLZcFtK', 'INSTRUCTOR', NULL, NULL, 1, '2026-01-15 19:01:32', 'Paşa1234'),
+(16, 'Sinem', NULL, 's@gmail.com', '$2y$10$GsjQR65qocqVGuvARJPDSOWOPC6TJ140/4v34jTX9D6HBWTSYFqxC', 'LEARNER', NULL, NULL, 1, '2026-01-15 20:15:47', 'S1234567'),
+(17, 'Badem', NULL, 'b@gmail.com', '$2y$10$hQYhruCtf4gQeQFltNJ5EuQyBSwtmp7WAluYSPcv3GPsk71GAHPYi', 'LEARNER', NULL, NULL, 1, '2026-01-15 22:58:45', 'B1234567');
 
 --
 -- Dökümü yapılmış tablolar için indeksler
@@ -289,6 +372,38 @@ ALTER TABLE `assessment_uploads`
   ADD KEY `attempt_id` (`attempt_id`);
 
 --
+-- Tablo için indeksler `assignments`
+--
+ALTER TABLE `assignments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `class_id` (`class_id`),
+  ADD KEY `instructor_id` (`instructor_id`);
+
+--
+-- Tablo için indeksler `classes`
+--
+ALTER TABLE `classes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `class_code` (`class_code`),
+  ADD KEY `instructor_id` (`instructor_id`);
+
+--
+-- Tablo için indeksler `class_join_requests`
+--
+ALTER TABLE `class_join_requests`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `class_id` (`class_id`),
+  ADD KEY `student_id` (`student_id`);
+
+--
+-- Tablo için indeksler `class_members`
+--
+ALTER TABLE `class_members`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_member` (`class_id`,`student_id`),
+  ADD KEY `student_id` (`student_id`);
+
+--
 -- Tablo için indeksler `instructor_invite_codes`
 --
 ALTER TABLE `instructor_invite_codes`
@@ -302,6 +417,14 @@ ALTER TABLE `instructor_invite_codes`
 --
 ALTER TABLE `resources`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Tablo için indeksler `submissions`
+--
+ALTER TABLE `submissions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `assignment_id` (`assignment_id`),
+  ADD KEY `student_id` (`student_id`);
 
 --
 -- Tablo için indeksler `users`
@@ -349,7 +472,7 @@ ALTER TABLE `assessment_answers`
 -- Tablo için AUTO_INCREMENT değeri `assessment_attempts`
 --
 ALTER TABLE `assessment_attempts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- Tablo için AUTO_INCREMENT değeri `assessment_results`
@@ -361,6 +484,30 @@ ALTER TABLE `assessment_results`
 -- Tablo için AUTO_INCREMENT değeri `assessment_uploads`
 --
 ALTER TABLE `assessment_uploads`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Tablo için AUTO_INCREMENT değeri `assignments`
+--
+ALTER TABLE `assignments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Tablo için AUTO_INCREMENT değeri `classes`
+--
+ALTER TABLE `classes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- Tablo için AUTO_INCREMENT değeri `class_join_requests`
+--
+ALTER TABLE `class_join_requests`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Tablo için AUTO_INCREMENT değeri `class_members`
+--
+ALTER TABLE `class_members`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -376,10 +523,16 @@ ALTER TABLE `resources`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- Tablo için AUTO_INCREMENT değeri `submissions`
+--
+ALTER TABLE `submissions`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- Tablo için AUTO_INCREMENT değeri `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- Dökümü yapılmış tablolar için kısıtlamalar
@@ -430,11 +583,45 @@ ALTER TABLE `assessment_uploads`
   ADD CONSTRAINT `assessment_uploads_ibfk_1` FOREIGN KEY (`attempt_id`) REFERENCES `assessment_attempts` (`id`) ON DELETE CASCADE;
 
 --
+-- Tablo kısıtlamaları `assignments`
+--
+ALTER TABLE `assignments`
+  ADD CONSTRAINT `assignments_ibfk_1` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `assignments_ibfk_2` FOREIGN KEY (`instructor_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Tablo kısıtlamaları `classes`
+--
+ALTER TABLE `classes`
+  ADD CONSTRAINT `classes_ibfk_1` FOREIGN KEY (`instructor_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Tablo kısıtlamaları `class_join_requests`
+--
+ALTER TABLE `class_join_requests`
+  ADD CONSTRAINT `class_join_requests_ibfk_1` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `class_join_requests_ibfk_2` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Tablo kısıtlamaları `class_members`
+--
+ALTER TABLE `class_members`
+  ADD CONSTRAINT `class_members_ibfk_1` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `class_members_ibfk_2` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
 -- Tablo kısıtlamaları `instructor_invite_codes`
 --
 ALTER TABLE `instructor_invite_codes`
   ADD CONSTRAINT `fk_invite_created_by` FOREIGN KEY (`created_by_admin_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_invite_used_by` FOREIGN KEY (`used_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Tablo kısıtlamaları `submissions`
+--
+ALTER TABLE `submissions`
+  ADD CONSTRAINT `submissions_ibfk_1` FOREIGN KEY (`assignment_id`) REFERENCES `assignments` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `submissions_ibfk_2` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
