@@ -3,31 +3,51 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/auth_guard.php';
 
-function getTestResults()
+function getTestResults(int $limit = 8): array
 {
-    global $pdo;
-    $userId = current_user_id();
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    $uid = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : 0;
+    if ($uid <= 0) return [];
 
-    $stmt = $pdo->prepare("SELECT * FROM ai_test_results WHERE user_id = ? ORDER BY created_at DESC");
-    $stmt->execute([$userId]);
-    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // PDO
+    $pdo = db(); // sende farklıysa: getPDO() / $GLOBALS['pdo'] vs.
 
-    // Map DB fields to UI expectation format
-    $history = [];
+    $sql = "
+      SELECT
+        a.category,
+        ar.score_percent,
+        ar.correct_count,
+        ar.wrong_count,
+        ar.cefr_estimate,
+        ar.created_at
+      FROM assessments a
+      JOIN assessment_results ar ON ar.assessment_id = a.id
+      WHERE a.user_id = :uid
+      ORDER BY ar.created_at DESC
+      LIMIT :lim
+    ";
+
+    $st = $pdo->prepare($sql);
+    $st->bindValue(':uid', $uid, PDO::PARAM_INT);
+    $st->bindValue(':lim', $limit, PDO::PARAM_INT);
+    $st->execute();
+
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    if (!$rows) return [];
+
+    // UI/AI coach tarafı için basit normalize
+    $out = [];
     foreach ($rows as $r) {
-        $history[] = [
-            "id" => $r["id"],
-            "date" => date("Y-m-d", strtotime($r["created_at"])),
-            "test" => $r["test_name"],
-            "type" => $r["test_type"],
-            "score" => floatval($r["score"]),
-            "max_score" => intval($r["max_score"]),
-            "level" => $r["cefr_level"],
-            "status" => "Completed",
-            "details" => json_decode($r["result_json"] ?? '{}', true)
+        $out[] = [
+            'category' => $r['category'],
+            'score_percent' => (float)$r['score_percent'],
+            'correct' => (int)$r['correct_count'],
+            'wrong' => (int)$r['wrong_count'],
+            'cefr' => $r['cefr_estimate'],
+            'date' => $r['created_at'],
         ];
     }
-    return $history;
+    return $out;
 }
 
 function addTestResult($result)
