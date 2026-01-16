@@ -68,7 +68,7 @@ if ($role === "admin") {
             <li><a href="<?php echo $path_prefix; ?>pages/reports.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'reports') ? 'active' : ''; ?>">Reports & Analytics</a></li>
             <li><a href="<?php echo $path_prefix; ?>pages/todo.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'todo') ? 'active' : ''; ?>">To-Do List</a></li>
             <li><a href="<?php echo $path_prefix; ?>pages/recommendations.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'ai') ? 'active' : ''; ?>">AI Coach</a></li>
-
+            <li><a href="<?php echo $path_prefix; ?>pages/join_class.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'join_class') ? 'active' : ''; ?>">Join Class</a></li>
 
             <li class="dropdown">
   <button class="dropdown-toggle">
@@ -92,16 +92,15 @@ if ($role === "admin") {
           <?php elseif ($role === "instructor"): ?>
 
             <li><a href="<?php echo $path_prefix; ?>pages/reports.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'reports') ? 'active' : ''; ?>">Class Reports</a></li>
-            <li><a href="<?php echo $path_prefix; ?>pages/review.php" class="<?php echo (isset($page) && $page === 'review') ? 'active' : ''; ?>">Review Answers</a></li>
+            <li><a href="<?php echo $path_prefix; ?>pages/review.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'review') ? 'active' : ''; ?>">Review Answers</a></li>
 
 
             <!-- Eğer bu dosyalar sende yoksa bu 2 satırı sil veya dosyaları oluştur -->
-            <li><a href="/Seng321/dashboard/instructor_assignments.php">Assignments</a></li>
-            <li><a href="<?php echo $base; ?>/instructor/class_codes.php">Class Codes</a></li>
+            <li><a href="<?php echo $path_prefix; ?>/Seng321/dashboard/instructor_assignments.php" style=" color: #e692beff;">Assignments</a></li>
+            <li><a href="<?php echo $base; ?>/pages/requests.php" style=" color: #e692beff;">Class Codes</a></li>
 
 
-            <li><a href="<?php echo $base; ?>/instructor/assignments.php" style=" color: #e692beff;">Assignments</a></li>
-            <li><a href="<?php echo $base; ?>/instructor/class_codes.php" style=" color: #e692beff;">Class Codes</a></li>
+            
 
             <li><a href="<?php echo $path_prefix; ?>pages/profile.php" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'profile') ? 'active' : ''; ?>">Profile</a></li>
             <li><a href="<?php echo $base; ?>/login_part/logout.php" style=" color: #e692beff;">Logout</a></li>
