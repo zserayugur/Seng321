@@ -181,7 +181,7 @@ Format:
 
 function geminiCall(string $prompt): string
 {
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . GEMINI_API_KEY;
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemma-3-1b-it:generateContent?key=" . GEMINI_API_KEY;
 
     $payload = [
         "contents" => [["parts" => [["text" => $prompt]]]]
