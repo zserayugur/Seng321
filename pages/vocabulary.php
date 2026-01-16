@@ -79,10 +79,29 @@ $state = $_SESSION[$sessionKey] ?? null;
     $idx = $state["idx"];
     ?>
 
+    <?php
+    $startedAt = $state["started_at"] ?? time();
+    $duration = 25 * 60; // 25 minutes
+    $elapsed = time() - $startedAt;
+    $remaining = max(0, $duration - $elapsed);
+    ?>
+    
     <section class="card" style="margin-top:16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div>Progress: <strong><?php echo min($idx + 1, $total); ?>/<?php echo $total; ?></strong></div>
-            <div>CEFR: <strong><?php echo htmlspecialchars($state["cefr"]); ?></strong></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+            <div>
+                <div>Progress: <strong><?php echo min($idx + 1, $total); ?>/<?php echo $total; ?></strong></div>
+                <div style="margin-top:4px;">CEFR: <strong><?php echo htmlspecialchars($state["cefr"]); ?></strong></div>
+            </div>
+            <div style="text-align:right;">
+                <div style="opacity:.75;">Time remaining</div>
+                <div id="timer" style="font-weight:800; font-size:1.2rem;">
+                    <?php
+                    $mm = floor($remaining / 60);
+                    $ss = $remaining % 60;
+                    echo sprintf("%02d:%02d", $mm, $ss);
+                    ?>
+                </div>
+            </div>
         </div>
         <div style="margin-top:8px; opacity:.75;">Source: <?php echo htmlspecialchars($state["source"]); ?></div>
     </section>
@@ -136,16 +155,21 @@ $state = $_SESSION[$sessionKey] ?? null;
                 "progress_percent" => ($change > 0) ? 20 : 50
             ]);
 
-            // 3. Add History
+            // 3. Add History (save to DB)
             addTestResult([
                 "id" => time(),
                 "date" => date("Y-m-d"),
                 "test" => "Vocabulary Assessment",
-                "type" => "standard",
-                "score" => $correct * (100 / $total), // Normalize to 100
-                "max_score" => 100,
+                "type" => "vocabulary",
+                "score" => $correct,
+                "max_score" => $total,
                 "level" => $newLevel,
-                "status" => "Completed"
+                "status" => "Completed",
+                "details" => [
+                    "correct" => $correct,
+                    "total" => $total,
+                    "percent" => $pct
+                ]
             ]);
         }
         // --- END SAVE LOGIC ---
@@ -181,12 +205,26 @@ $state = $_SESSION[$sessionKey] ?? null;
         </section>
 
     <?php else: ?>
-        <?php $q = $questions[$idx]; ?>
+        <?php 
+        // Auto-submit if time expired
+        if ($remaining <= 0 && $idx < $total) {
+            for ($i = $idx; $i < $total; $i++) {
+                if (!isset($state["answers"][$i])) {
+                    $_SESSION[$sessionKey]["answers"][$i] = -1;
+                }
+            }
+            $_SESSION[$sessionKey]["idx"] = $total;
+            header("Location: vocabulary.php");
+            exit;
+        }
+        
+        $q = $questions[$idx]; 
+        ?>
         <section class="card" style="margin-top:16px;">
             <h2>Question <?php echo $idx + 1; ?></h2>
             <p style="margin-top:10px;"><?php echo htmlspecialchars($q["stem"]); ?></p>
 
-            <form method="post" style="margin-top:12px;">
+            <form id="vocabForm" method="post" style="margin-top:12px;">
                 <input type="hidden" name="action" value="answer">
                 <input type="hidden" name="idx" value="<?php echo $idx; ?>">
 
@@ -197,9 +235,43 @@ $state = $_SESSION[$sessionKey] ?? null;
                     </label>
                 <?php endforeach; ?>
 
-                <button class="btn-primary" type="submit" style="margin-top:10px;">Next</button>
+                <div style="display:flex; gap:10px; margin-top:12px;">
+                    <button class="btn-primary" type="submit">Next</button>
+                    <?php if ($idx > 0): ?>
+                        <a class="btn" href="vocabulary.php?back=1">Previous</a>
+                    <?php endif; ?>
+                </div>
             </form>
         </section>
+        
+        <script>
+        (function() {
+            let remaining = <?php echo intval($remaining); ?>;
+            const timerEl = document.getElementById("timer");
+            const form = document.getElementById("vocabForm");
+            
+            function fmt(s) {
+                const mm = String(Math.floor(s / 60)).padStart(2, "0");
+                const ss = String(s % 60).padStart(2, "0");
+                return mm + ":" + ss;
+            }
+            
+            timerEl.textContent = fmt(remaining);
+            
+            const tick = setInterval(function() {
+                remaining--;
+                if (remaining < 0) remaining = 0;
+                timerEl.textContent = fmt(remaining);
+                
+                if (remaining === 0) {
+                    clearInterval(tick);
+                    if (form) {
+                        window.location.href = "vocabulary.php";
+                    }
+                }
+            }, 1000);
+        })();
+        </script>
     <?php endif; ?>
 
 <?php endif; ?>

@@ -1,12 +1,16 @@
 <?php
+// Fix: Only start session if not already active
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
 
+// Load base path utility
+require_once __DIR__ . '/base_path.php';
 
 if (!isset($_SESSION["user"])) {
-header("Location: /Seng321/includes/login.php");
-  header("Location: /Seng321/includes/login.php");
+  // Use dynamic base path for redirect
+  $basePath = get_base_path();
+  header("Location: " . $basePath . "/login_part/index.php?tab=login");
   exit;
 }
 

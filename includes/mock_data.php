@@ -9,45 +9,52 @@ function getTestResults(int $limit = 8): array
     $uid = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : 0;
     if ($uid <= 0) return [];
 
-    // PDO
-    $pdo = db(); // sende farklıysa: getPDO() / $GLOBALS['pdo'] vs.
-
-    $sql = "
-      SELECT
-        a.category,
-        ar.score_percent,
-        ar.correct_count,
-        ar.wrong_count,
-        ar.cefr_estimate,
-        ar.created_at
-      FROM assessments a
-      JOIN assessment_results ar ON ar.assessment_id = a.id
-      WHERE a.user_id = :uid
-      ORDER BY ar.created_at DESC
-      LIMIT :lim
-    ";
-
-    $st = $pdo->prepare($sql);
-    $st->bindValue(':uid', $uid, PDO::PARAM_INT);
-    $st->bindValue(':lim', $limit, PDO::PARAM_INT);
-    $st->execute();
-
-    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
-    if (!$rows) return [];
-
-    // UI/AI coach tarafı için basit normalize
-    $out = [];
-    foreach ($rows as $r) {
-        $out[] = [
-            'category' => $r['category'],
-            'score_percent' => (float)$r['score_percent'],
-            'correct' => (int)$r['correct_count'],
-            'wrong' => (int)$r['wrong_count'],
-            'cefr' => $r['cefr_estimate'],
-            'date' => $r['created_at'],
-        ];
+    global $pdo;
+    if (!isset($pdo)) {
+        require_once __DIR__ . '/../config/db.php';
     }
-    return $out;
+
+    try {
+        $sql = "
+          SELECT
+            a.category,
+            ar.score_percent,
+            ar.correct_count,
+            ar.wrong_count,
+            ar.cefr_estimate,
+            ar.created_at
+          FROM assessments a
+          JOIN assessment_results ar ON ar.assessment_id = a.id
+          WHERE a.user_id = :uid
+          ORDER BY ar.created_at DESC
+          LIMIT :lim
+        ";
+
+        $st = $pdo->prepare($sql);
+        $st->bindValue(':uid', $uid, PDO::PARAM_INT);
+        $st->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $st->execute();
+
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+        if (!$rows) return [];
+
+        // UI/AI coach tarafı için basit normalize
+        $out = [];
+        foreach ($rows as $r) {
+            $out[] = [
+                'category' => $r['category'],
+                'score_percent' => (float)$r['score_percent'],
+                'correct' => (int)$r['correct_count'],
+                'wrong' => (int)$r['wrong_count'],
+                'cefr' => $r['cefr_estimate'],
+                'date' => $r['created_at'],
+            ];
+        }
+        return $out;
+    } catch (PDOException $e) {
+        error_log("getTestResults error: " . $e->getMessage());
+        return [];
+    }
 }
 
 function addTestResult($result)
@@ -55,25 +62,48 @@ function addTestResult($result)
     global $pdo;
     $userId = current_user_id();
 
-    $sql = "INSERT INTO ai_test_results (user_id, test_type, test_name, score, max_score, cefr_level, result_json) VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-    $jsonData = isset($result['details']) ? json_encode($result['details']) : null;
-
+    // Use existing tables: assessments + assessment_results
     try {
-        $stmt = $pdo->prepare($sql);
+        // 1. Create assessment record
+        $category = $result['type'] ?? 'standard';
+        $stmt = $pdo->prepare("
+            INSERT INTO assessments (user_id, category, level, started_at, submitted_at)
+            VALUES (?, ?, ?, NOW(), NOW())
+        ");
         $stmt->execute([
             $userId,
-            $result['type'],
-            $result['test'],
-            $result['score'],
-            $result['max_score'],
-            $result['level'],
-            $jsonData
+            $category,
+            $result['level'] ?? 'B1'
+        ]);
+        $assessmentId = (int)$pdo->lastInsertId();
+
+        // 2. Create assessment_result record
+        $scorePercent = ($result['max_score'] > 0) 
+            ? round(($result['score'] / $result['max_score']) * 100, 2) 
+            : 0;
+        
+        $correctCount = isset($result['details']['correct']) 
+            ? (int)$result['details']['correct'] 
+            : (int)round(($result['score'] / ($result['max_score'] ?? 100)) * ($result['max_score'] ?? 20));
+        
+        $wrongCount = ($result['max_score'] ?? 20) - $correctCount;
+        
+        $stmt2 = $pdo->prepare("
+            INSERT INTO assessment_results 
+            (assessment_id, correct_count, wrong_count, score_percent, cefr_estimate, feedback_summary)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
+        $stmt2->execute([
+            $assessmentId,
+            $correctCount,
+            $wrongCount,
+            $scorePercent,
+            $result['level'] ?? 'B1',
+            isset($result['details']) ? json_encode($result['details']) : null
         ]);
     } catch (PDOException $e) {
         error_log("DB Insert Test Result Error: " . $e->getMessage());
-        // Fail silently or maybe save to session as backup?
-        // For now, silent fail to avoid breaking UI
+        // Fail silently to avoid breaking UI
     }
 }
 

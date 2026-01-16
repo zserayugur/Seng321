@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../config/db.php';
 
 if (!isset($_SESSION['user'])) {
     header("Location: /Seng321/login_part/index.php");

@@ -17,7 +17,7 @@ $error = "";
 
 /* USER FETCH */
 $stmt = $pdo->prepare("
-    SELECT id, name, email, password_hash, education_level, institution
+    SELECT id, name, email, password_hash, education_level
     FROM users WHERE id = ? LIMIT 1
 ");
 $stmt->execute([$userId]);
@@ -48,21 +48,18 @@ if (isset($_POST['update_info'])) {
 /* UPDATE EDUCATION INFO */
 if (isset($_POST['update_education'])) {
     $level = $_POST['education_level'] ?? null;
-    $inst  = trim($_POST['institution'] ?? '');
 
     $stmt = $pdo->prepare("
         UPDATE users 
-        SET education_level = ?, institution = ?
+        SET education_level = ?
         WHERE id = ?
     ");
     $stmt->execute([
         $level ?: null,
-        $inst ?: null,
         $userId
     ]);
 
     $user['education_level'] = $level;
-    $user['institution'] = $inst;
 
     $message = "Education information updated successfully.";
 }
@@ -149,12 +146,6 @@ require_once __DIR__ . '/../includes/header.php';
                         <option value="Graduate" <?= ($user['education_level'] === 'Graduate') ? 'selected' : '' ?>>Graduate</option>
                         <option value="Other" <?= ($user['education_level'] === 'Other') ? 'selected' : '' ?>>Other</option>
                     </select>
-                </div>
-
-                <div class="form-row">
-                    <label class="form-label">Institution / School</label>
-                    <input class="form-input" type="text" name="institution"
-                           value="<?= htmlspecialchars($user['institution'] ?? '') ?>">
                 </div>
 
                 <button class="btn primary" type="submit" name="update_education">

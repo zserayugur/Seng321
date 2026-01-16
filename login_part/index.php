@@ -34,7 +34,11 @@
   </div>
 
   <!-- LOGIN FORM -->
-  <form id="login" class="form" method="POST" action="/Seng321/login_part/login.php">
+  <?php
+  require_once __DIR__ . '/../includes/base_path.php';
+  $basePath = get_base_path();
+  ?>
+  <form id="login" class="form" method="POST" action="<?php echo htmlspecialchars($basePath); ?>/login_part/login.php">
     <h2>Login</h2>
 
     <?php if (isset($_GET['registered'])): ?>
@@ -68,7 +72,7 @@
   </form>
 
   <!-- REGISTER FORM -->
-  <form id="register" class="form hidden" method="POST" action="/Seng321/login_part/register.php">
+  <form id="register" class="form hidden" method="POST" action="<?php echo htmlspecialchars($basePath); ?>/login_part/register.php">
     <h2>Register</h2>
 
     <?php if (isset($_GET['error']) && $_GET['error'] === 'weak_password'): ?>
@@ -109,7 +113,7 @@
   </form>
 
   <!-- FORGOT PASSWORD FORM -->
-  <form id="forgot" class="form hidden" method="POST" action="/Seng321/actions/forgot_password.php">
+  <form id="forgot" class="form hidden" method="POST" action="<?php echo htmlspecialchars($basePath); ?>/actions/forgot_password.php">
     <h2>Forgot Password</h2>
 
     <input
