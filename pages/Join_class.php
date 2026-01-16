@@ -5,12 +5,31 @@ require_once __DIR__ . "/../config/db.php";          // $pdo
 $student_id = (int)($_SESSION["user"]["id"] ?? 0);
 $class_code = strtoupper(trim($_POST["class_code"] ?? ""));
 
+<<<<<<< Updated upstream
 if ($student_id <= 0) {
   die("Not logged in.");
 }
 if ($class_code === "") {
   die("Class code required.");
 }
+=======
+        <form method="post" action="../actions/join_class_action.php" class="form">
+            <div class="form-group">
+                <input
+                    type="text"
+                    name="class_code"
+                    class="input"
+                    placeholder="Class Code (e.g. ENG-7F3K9A)"
+                    required
+                >
+            </div>
+            <button type="submit" class="btn btn-primary full-width">
+                Send Join Request
+            </button>
+        </form>
+    </div>
+</div>
+>>>>>>> Stashed changes
 
 /* 1) Class var mı + aktif mi? */
 $stmt = $pdo->prepare("SELECT id FROM classes WHERE class_code = ? AND is_active = 1 LIMIT 1");
