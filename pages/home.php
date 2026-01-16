@@ -18,16 +18,19 @@
 
     <!-- HEADER -->
     <header class="main-header">
+    <a href="home.php">
         <img 
-  src="/Seng321/assets/logo2.png" 
-  alt="LevelUP English"
-  style="height: 120px; width: 130px;">
-        <nav class="nav-links">
-            <a href="home.php" class="active">Home</a>
-            <a href="../login.php">Login</a>
-            <a href="../register.php">Get Started</a>
-        </nav>
-    </header>
+            src="/Seng321/assets/logo2.png" 
+            alt="LevelUP English"
+            style="height: 120px; width: 130px;">
+    </a>
+
+    <nav class="nav-links">
+        <a href="../login_part/login.php" style="color: #e692beff;">Login</a>
+        <a href="../login_part/register.php" style="color: #e692beff;">Get Started</a>
+    </nav>
+</header>
+
 
     <!-- HERO -->
     <div class="card">
@@ -36,9 +39,6 @@
             Determine your CEFR level, receive personalized learning plans,
             and track your progress across all language skills.
         </p>
-
-        <a href="../login_part/register.php" class="btn btn-primary">Get Started</a>
-        <a href="../login_part/login.php" class="btn" style="margin-left:10px;">Login</a>
     </div>
 
     <!-- HOW IT WORKS -->
@@ -58,7 +58,7 @@
             <h2>Track Progress</h2>
             <p>Monitor improvement across all language skills.</p>
         </div>
-
+        
     </div>
 
     <!-- FEATURES -->

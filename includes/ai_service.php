@@ -149,6 +149,164 @@ Provide exactly 3 items for daily_plan and 3 items for resources.
         $fallback['insight_text'] = "AI Error: " . $e->getMessage();
         return $fallback;
     }
+<<<<<<< HEAD
+=======
+
+    $raw = geminiCall($prompt);
+
+    // Extract JSON using regex (handles markdown blocks like ```json ... ```)
+    if (!preg_match('/\{[\s\S]*\}/', $raw, $m)) {
+        error_log("AI Questions Error: No JSON found in response.");
+        return getFallbackTestQuestions($skill, $cefr, $count);
+    }
+
+    $jsonStr = $m[0];
+
+    // Clean markdown and control characters
+    $jsonStr = preg_replace('/^```json\s*/i', '', $jsonStr);
+    $jsonStr = preg_replace('/^```\s*/i', '', $jsonStr);
+    $jsonStr = preg_replace('/\s*```$/', '', $jsonStr);
+    $jsonStr = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $jsonStr);
+
+    // Try to decode
+    $data = json_decode($jsonStr, true);
+
+    // If first attempt fails, try raw match as fallback
+    if (!$data) {
+        $data = json_decode($m[0], true);
+    }
+
+    if (!$data) {
+        error_log("AI Questions JSON Decode Error: " . json_last_error_msg());
+        return getFallbackTestQuestions($skill, $cefr, $count);
+    }
+
+    if (!isset($data["questions"])) {
+        return getFallbackTestQuestions($skill, $cefr, $count);
+    }
+
+    $normalized = normalizeQuestionsForUI($data["questions"]);
+
+    if (count($normalized) === 0) {
+        return getFallbackTestQuestions($skill, $cefr, $count);
+    }
+
+    $passage = null;
+    if ($skill === "reading") {
+        $passage = $data["passage"] ?? null;
+    }
+
+    return [
+        "skill" => $skill,
+        "cefr" => $cefr,
+        "passage" => $passage,
+        "questions" => $normalized,
+        "source" => "gemini"
+    ];
+}
+
+/* ============================================================
+   GEMINI CALL
+============================================================ */
+
+function geminiCall(string $prompt): string
+{
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemma-3-1b-it:generateContent?key=" . GEMINI_API_KEY;
+
+    $payload = [
+        "contents" => [["parts" => [["text" => $prompt]]]]
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false
+    ]);
+
+    $response = curl_exec($ch);
+    $curlError = curl_error($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($curlError) {
+        $msg = "Gemini cURL Error: " . $curlError;
+        error_log($msg);
+        return '{"error": "' . $msg . '"}'; // Return error as JSON so caller sees it
+    }
+
+    if ($httpCode !== 200) {
+        $msg = "Gemini HTTP Error: {$httpCode}. Response: " . substr($response, 0, 200);
+        error_log($msg);
+        return '{"error": "' . $msg . '"}';
+    }
+
+    $json = json_decode($response, true);
+
+    if (!isset($json['candidates'][0]['content']['parts'][0]['text'])) {
+        error_log("Gemini API unexpected response: " . substr($response, 0, 500));
+        return $response; // Return raw so we can debug
+    }
+
+    return $json['candidates'][0]['content']['parts'][0]['text'];
+}
+
+/* ============================================================
+   NORMALIZER
+============================================================ */
+
+function normalizeQuestionsForUI($questions)
+{
+    $out = [];
+
+    foreach ($questions as $q) {
+        $stem = $q["stem"] ?? $q["question"] ?? "";
+        $choices = $q["choices"] ?? $q["options"] ?? [];
+        $ans = $q["answer_index"] ?? $q["answer"] ?? 0;
+
+        if (is_string($ans) && preg_match('/^[A-D]$/i', $ans)) {
+            $ans = ord(strtoupper($ans)) - 65;
+        }
+
+        $out[] = [
+            "stem" => $stem,
+            "choices" => array_values($choices),
+            "answer_index" => intval($ans)
+        ];
+    }
+
+    return $out;
+}
+
+/* ============================================================
+   FALLBACK
+============================================================ */
+
+function getFallbackTestQuestions($skill, $cefr, $count)
+{
+    $q = [];
+    for ($i = 1; $i <= $count; $i++) {
+        $q[] = [
+            "stem" => "Mock Question {$i} for {$skill} ({$cefr})",
+            "choices" => ["Option A", "Option B", "Option C", "Option D"],
+            "answer_index" => 0
+        ];
+    }
+
+    $data = [
+        "questions" => $q,
+        "source" => "fallback"
+    ];
+
+    if (strtolower($skill) === 'reading') {
+        $data['passage'] = "This is a placeholder reading passage because the AI could not be reached. \n\nLearning a language requires consistent practice. Reading daily helps expand vocabulary and understanding of grammar structures. In this mock test, you can practice answering questions even without a generated text, or try refreshing the page to connect to the AI again.";
+    }
+
+    return $data;
+>>>>>>> 04157ae9377dafc54a14f8937bf7ed7f79e6bf77
 }
 
 function getFallbackData()

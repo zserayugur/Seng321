@@ -59,16 +59,22 @@ function addTestResult($result)
 
     $jsonData = isset($result['details']) ? json_encode($result['details']) : null;
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([
-        $userId,
-        $result['type'],
-        $result['test'],
-        $result['score'],
-        $result['max_score'],
-        $result['level'],
-        $jsonData
-    ]);
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            $userId,
+            $result['type'],
+            $result['test'],
+            $result['score'],
+            $result['max_score'],
+            $result['level'],
+            $jsonData
+        ]);
+    } catch (PDOException $e) {
+        error_log("DB Insert Test Result Error: " . $e->getMessage());
+        // Fail silently or maybe save to session as backup?
+        // For now, silent fail to avoid breaking UI
+    }
 }
 
 function getUserProfile()
