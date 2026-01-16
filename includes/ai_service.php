@@ -35,34 +35,36 @@ function fetchAIRecommendationsFromChatGPT()
         return getFallbackData();
     }
 
-    $raw = geminiCall("You are an expert English tutor. Return raw JSON only. Do not wrap in markdown code blocks. Create a short, motivating study plan for a student at B2 level. Insight must be about language learning consistency. Focus area examples: 'Business Vocabulary', 'Past Perfect Tense', 'IELTS Speaking'. Format: {\"insight_text\":\"...\",\"focus_area\":\"...\",\"daily_plan\":[{\"title\":\"...\",\"duration\":\"...\",\"priority\":\"High/Medium/Low\",\"type\":\"Quiz/Video/Reading\"}],\"resources\":[{\"title\":\"...\",\"description\":\"...\",\"type\":\"Quiz/Video\"}]}");
+    $prompt = "
+You are an expert English tutor. 
+Create a study plan for a B2 student.
+Return VALID JSON only. No markdown. No comments.
 
-    // Extract JSON using regex (handles markdown blocks like ```json ... ```)
+Format:
+{
+  \"insight_text\": \"Short motivating insight about consistency.\",
+  \"focus_area\": \"e.g. Business Vocabulary\",
+  \"daily_plan\": [
+     {\"title\":\"Task 1\",\"duration\":\"15 min\",\"priority\":\"High\",\"type\":\"Quiz\"},
+     {\"title\":\"Task 2\",\"duration\":\"10 min\",\"priority\":\"Medium\",\"type\":\"Video\"}
+  ],
+  \"resources\": [
+     {\"title\":\"Resource 1\",\"description\":\"Desc...\",\"type\":\"Reading\"}
+  ]
+}
+";
+
+    $raw = geminiCall($prompt);
+
     if (preg_match('/\{[\s\S]*\}/', $raw, $matches)) {
         $jsonStr = $matches[0];
-
-        // Sometimes AI adds ```json ... ``` wrapper inside the match if we aren't careful, 
-        // or control characters. Let's clean it.
-        $jsonStr = preg_replace('/^```json\s*/i', '', $jsonStr);
-        $jsonStr = preg_replace('/^```\s*/i', '', $jsonStr);
-        $jsonStr = preg_replace('/\s*```$/', '', $jsonStr);
-
-        // Remove potentially dangerous control characters
-        $jsonStr = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $jsonStr);
+        $jsonStr = cleanJson($jsonStr);
 
         $data = json_decode($jsonStr, true);
-        if ($data)
+        if ($data && isset($data['insight_text'])) {
             return $data;
-
-        // If still failed, try decoding the raw match without cleaning (sometimes aggressive cleaning breaks it)
-        $data2 = json_decode($matches[0], true);
-        if ($data2)
-            return $data2;
+        }
     }
-
-    // Fallback if parsing fails
-    $errorMsg = "AI Parse Error. Raw: " . htmlspecialchars(substr($raw, 0, 100));
-    error_log($errorMsg);
 
     return getFallbackData();
 }
@@ -78,12 +80,70 @@ function fetchAITestQuestions(string $skill, string $cefr, int $count = 20): arr
 
     $skill = strtolower($skill);
 
-    // 🔥 READING PROMPT
+    // BATCHING LOGIC FOR NON-READING TESTS > 10 QUESTIONS
+    // This ensures we get exactly the requested number of questions by breaking it down.
+    if ($skill !== "reading" && $count > 10) {
+        $batchSize = 10;
+        $batches = ceil($count / $batchSize);
+        $allQuestions = [];
+
+        for ($i = 0; $i < $batches; $i++) {
+            $currentRequestCount = ($i === $batches - 1) ? ($count - ($i * $batchSize)) : $batchSize;
+            if ($currentRequestCount <= 0)
+                break;
+
+            $prompt = "
+You are an expert English teacher.
+Create a JSON object containing exactly {$currentRequestCount} multiple-choice questions to test {$skill}.
+
+DIFFICULTY: Mixed (A2 to C1).
+
+STRICT RULES:
+1. Return VALID JSON only.
+2. The 'questions' array MUST have exactly {$currentRequestCount} items.
+3. No markdown blocks.
+
+Format:
+{\"questions\": [{\"stem\":\"...\",\"choices\":[\"A\",\"B\",\"C\",\"D\"],\"answer_index\":0}, ...]}
+";
+            $raw = geminiCall($prompt);
+
+            $jsonStr = $raw;
+            $jsonStr = cleanJson($jsonStr);
+            $data = json_decode($jsonStr, true);
+
+            if ($data && isset($data['questions'])) {
+                foreach ($data['questions'] as $q) {
+                    $allQuestions[] = $q;
+                }
+            }
+
+            // Short delay to avoid rate limits
+            if ($i < $batches - 1)
+                usleep(500000);
+        }
+
+        if (empty($allQuestions)) {
+            return getFallbackTestQuestions($skill, $cefr, $count);
+        }
+
+        $allQuestions = array_slice($allQuestions, 0, $count);
+
+        return [
+            "skill" => $skill,
+            "cefr" => $cefr,
+            "passage" => null,
+            "questions" => normalizeQuestionsForUI($allQuestions),
+            "source" => "gemini_batched"
+        ];
+    }
+
+    // STANDARD LOGIC (Reading or Small Counts)
     if ($skill === "reading") {
         $prompt = "
 You are creating an English reading test.
 
-First write a CEFR {$cefr} level reading passage of 120–180 words.
+First write a long and detailed CEFR {$cefr} level reading passage of 250–350 words.
 
 Then create {$count} multiple choice questions based ONLY on that passage.
 
@@ -103,20 +163,25 @@ Format:
 }
 ";
     } else {
-        // Grammar / Vocab
         $prompt = "
-Return JSON only.
-No markdown.
-No explanation.
+You are an expert English teacher.
+Create a JSON object containing exactly {$count} multiple-choice questions to test {$skill}.
 
-Skill: {$skill}
-Level: MIXED (Provide questions ranging from A2 to C1 for better placement. 25% Easy, 50% Medium, 25% Hard)
-Count: {$count}
+Difficulty Distribution:
+- 5 Easy (A2)
+- 10 Medium (B1-B2)
+- 5 Hard (C1)
+
+Strict Output Rules:
+- Return valid JSON only.
+- No markdown formatting (no ```json).
+- The 'questions' array MUST have exactly {$count} items.
 
 Format:
 {
   \"questions\": [
-     {\"stem\":\"\",\"choices\":[\"\",\"\",\"\",\"\"],\"answer_index\":0}
+     {\"stem\":\"Question text...\",\"choices\":[\"A\",\"B\",\"C\",\"D\"],\"answer_index\":0},
+     ...
   ]
 }
 ";
@@ -124,34 +189,14 @@ Format:
 
     $raw = geminiCall($prompt);
 
-    // Extract JSON using regex (handles markdown blocks like ```json ... ```)
     if (!preg_match('/\{[\s\S]*\}/', $raw, $m)) {
-        error_log("AI Questions Error: No JSON found in response.");
         return getFallbackTestQuestions($skill, $cefr, $count);
     }
 
-    $jsonStr = $m[0];
-
-    // Clean markdown and control characters
-    $jsonStr = preg_replace('/^```json\s*/i', '', $jsonStr);
-    $jsonStr = preg_replace('/^```\s*/i', '', $jsonStr);
-    $jsonStr = preg_replace('/\s*```$/', '', $jsonStr);
-    $jsonStr = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $jsonStr);
-
-    // Try to decode
+    $jsonStr = cleanJson($m[0]);
     $data = json_decode($jsonStr, true);
 
-    // If first attempt fails, try raw match as fallback
-    if (!$data) {
-        $data = json_decode($m[0], true);
-    }
-
-    if (!$data) {
-        error_log("AI Questions JSON Decode Error: " . json_last_error_msg());
-        return getFallbackTestQuestions($skill, $cefr, $count);
-    }
-
-    if (!isset($data["questions"])) {
+    if (!$data || !isset($data["questions"])) {
         return getFallbackTestQuestions($skill, $cefr, $count);
     }
 
@@ -167,11 +212,11 @@ Format:
     }
 
     return [
-        'skill' => $skill,
-        'cefr' => $cefr,
-        'passage' => ($skill === 'reading') ? ($aiData['passage'] ?? '') : null,
-        'questions' => $questions,
-        'source' => 'gemini'
+        "skill" => $skill,
+        "cefr" => $cefr,
+        "passage" => $passage,
+        "questions" => $normalized,
+        "source" => "gemini"
     ];
 }
 
@@ -181,144 +226,129 @@ Format:
 
 function geminiCall(string $prompt): string
 {
-<<<<<<< HEAD
+    // Using valid working model
     $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=" . GEMINI_API_KEY;
-=======
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" . GEMINI_API_KEY;
->>>>>>> 33cf4f2697a1be304ab688270f08808189c02e73
 
     $payload = [
-        'contents' => [[
-            'parts' => [['text' => $prompt]]
-        ]]
+        "contents" => [["parts" => [["text" => $prompt]]]],
+        "generationConfig" => [
+            "start_of_sequence_token" => null,
+            "response_mime_type" => "application/json",
+            "maxOutputTokens" => 8192,
+            "temperature" => 0.7
+        ]
     ];
 
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    $maxRetries = 3;
+    $attempt = 0;
 
-    $response = curl_exec($ch);
-    if (curl_errno($ch)) {
-        $err = curl_error($ch);
-        curl_close($ch);
-        return [
-            'cefr' => $knownCefr ?: 'B1',
-            'ielts_estimate' => 5.5,
-            'toefl_estimate' => 72,
-            'diagnostic' => 'Connection error: ' . $err,
-            'strengths' => [],
-            'improvements' => [],
-            'next_steps' => [],
-            'word_count' => $wordCount,
-            'source' => 'fallback'
-        ];
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_TIMEOUT => 45
+    ]);
+
+    while ($attempt < $maxRetries) {
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        // Success
+        if (!$curlError && $httpCode === 200) {
+            curl_close($ch);
+            $json = json_decode($response, true);
+            return $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        }
+
+        // Retryable errors: 429 (Too Many Requests) or 5xx (Server Error)
+        if ($httpCode === 429 || $httpCode >= 500) {
+            $attempt++;
+            error_log("Gemini Retry {$attempt}/{$maxRetries} due to HTTP {$httpCode}...");
+            sleep(2 * $attempt); // Backoff: 2s, 4s, 6s...
+            continue;
+        }
+
+        // Fatal error (400, 401, 403, 404, etc.)
+        error_log("Gemini Fatal Error: HTTP {$httpCode}. Response: " . substr($response, 0, 200));
+        break;
     }
+
     curl_close($ch);
+    return "";
+}
 
-    $decoded = json_decode($response, true);
-    if (isset($decoded['error'])) {
-        $msg = $decoded['error']['message'] ?? 'Unknown Gemini error';
-        return [
-            'cefr' => $knownCefr ?: 'B1',
-            'ielts_estimate' => 5.5,
-            'toefl_estimate' => 72,
-            'diagnostic' => 'Gemini API error: ' . $msg,
-            'strengths' => [],
-            'improvements' => [],
-            'next_steps' => [],
-            'word_count' => $wordCount,
-            'source' => 'fallback'
+/* ============================================================
+   HELPERS & NORMALIZER
+============================================================ */
+
+function cleanJson($jsonStr)
+{
+    $jsonStr = preg_replace('/^```json\s*/i', '', $jsonStr);
+    $jsonStr = preg_replace('/^```\s*/i', '', $jsonStr);
+    $jsonStr = preg_replace('/\s*```$/', '', $jsonStr);
+    return preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $jsonStr);
+}
+
+function normalizeQuestionsForUI($questions)
+{
+    $out = [];
+    // Ensure input is array
+    if (!is_array($questions))
+        return [];
+
+    foreach ($questions as $q) {
+        $stem = $q["stem"] ?? $q["question"] ?? "";
+        $choices = $q["choices"] ?? $q["options"] ?? [];
+        $ans = $q["answer_index"] ?? $q["answer"] ?? 0;
+
+        if (is_string($ans) && preg_match('/^[A-D]$/i', $ans)) {
+            $ans = ord(strtoupper($ans)) - 65;
+        }
+
+        $out[] = [
+            "stem" => $stem,
+            "choices" => array_values($choices),
+            "answer_index" => intval($ans)
         ];
     }
+    return $out;
+}
 
-    $rawText = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? '';
-    $rawText = str_replace(["```json", "```"], "", $rawText);
-    $ai = json_decode(trim($rawText), true);
-
-<<<<<<< HEAD
 /* ============================================================
    FALLBACK
 ============================================================ */
 
 function getFallbackTestQuestions($skill, $cefr, $count)
 {
-    // Fallback meant to be meaningful for Reading
     if (strtolower($skill) === 'reading') {
-        $passage = "The Future of Urban Transportation
-
-As cities around the world continue to grow, the challenge of moving people efficiently and sustainably becomes increasingly urgent. Urban transportation is undergoing a major transformation, driven by technological advancements and shifting environmental priorities.
-
-The rise of electric vehicles (EVs) is a cornerstone of this shift. Governments are incentivizing the adoption of EVs to reduce air pollution and noise levels in densely populated areas. However, simply replacing gas-powered cars with electric ones is not a complete solution. Congestion remains a critical issue. To address this, many cities are investing in smart traffic management systems that use artificial intelligence to optimize traffic light timing and reduce bottlenecks.
-
-Public transportation is also evolving. High-speed trains and autonomous buses are being tested in various metropolises. These innovations aim to make public transit faster, safer, and more convenient than driving. Furthermore, the concept of 'Mobility as a Service' (MaaS) is gaining traction. MaaS platforms integrate different modes of transport—buses, trains, bike-shares, and ride-hailing app —into a single, seamless interface, allowing users to plan and pay for their entire journey with one click.
-
-Another significant trend is the resurgence of cycling and walking. Urban planners are redesigning streets to prioritize pedestrians and cyclists, creating dedicated lanes and car-free zones. This 'active travel' approach not only alleviates traffic but also promotes public health.
-
-Despite these advancements, challenges such as infrastructure costs and equitable access remain. It is crucial that the future of transportation is inclusive, ensuring that all citizens, regardless of income, benefit from these improvements.";
+        $passage = "The Future of Urban Transportation\n\nAs cities around the world continue to grow, the challenge of moving people efficiently and sustainably becomes increasingly urgent. Urban transportation is undergoing a major transformation, driven by technological advancements and shifting environmental priorities.\n\nThe rise of electric vehicles (EVs) is a cornerstone of this shift. Governments are incentivizing the adoption of EVs to reduce air pollution and noise levels in densely populated areas. However, simply replacing gas-powered cars with electric ones is not a complete solution. Congestion remains a critical issue.\n\nPublic transportation is also evolving. High-speed trains and autonomous buses are being tested in various metropolises. These innovations aim to make public transit faster, safer, and more convenient than driving.";
 
         $questions = [
             [
                 "stem" => "What is the primary focus of the passage?",
-                "choices" => [
-                    "The history of cars in the 20th century.",
-                    "The decline of public transportation systems.",
-                    "The transformation and future of urban transportation.",
-                    "The benefits of living in rural areas."
-                ],
+                "choices" => ["History of cars", "Decline of public transport", "Transformation of urban transport", "Rural living"],
                 "answer_index" => 2
             ],
             [
                 "stem" => "Why are governments encouraging electric vehicles?",
-                "choices" => [
-                    "To increase noise pollution.",
-                    "To reduce air pollution and noise.",
-                    "To make cars more expensive.",
-                    "To use more fossil fuels."
-                ],
+                "choices" => ["To increase noise", "To reduce air pollution and noise", "To make cars expensive", "To use fossil fuels"],
                 "answer_index" => 1
             ],
             [
-                "stem" => "What is 'Mobility as a Service' (MaaS)?",
-                "choices" => [
-                    "A service that sells luxury cars.",
-                    "A platform integrating various transport modes into one interface.",
-                    "A new type of high-speed train.",
-                    "A law banning cars in cities."
-                ],
-                "answer_index" => 1
-            ],
-            [
-                "stem" => "How are urban planners promoting 'active travel'?",
-                "choices" => [
-                    "By removing sidewalks.",
-                    "By building more parking lots.",
-                    "By creating dedicated lanes for cyclists and pedestrians.",
-                    "By increasing speed limits for cars."
-                ],
-                "answer_index" => 2
-            ],
-            [
-                "stem" => "What remains a challenge mentioned in the conclusion?",
-                "choices" => [
-                    "The lack of technology.",
-                    "The disinterest of the public.",
-                    "Infrastructure costs and equitable access.",
-                    "The slowness of electric cars."
-                ],
+                "stem" => "What remains a critical issue despite EVs?",
+                "choices" => ["Speed", "Safety", "Congestion", "Comfort"],
                 "answer_index" => 2
             ]
         ];
 
-        // Ensure we meet the requested count
+        // Fill up to count
         while (count($questions) < $count) {
-            $base = $questions[count($questions) % 5];
+            $base = $questions[count($questions) % 3];
             $questions[] = [
                 "stem" => $base["stem"] . " (Variant " . (count($questions) + 1) . ")",
                 "choices" => $base["choices"],
@@ -333,31 +363,15 @@ Despite these advancements, challenges such as infrastructure costs and equitabl
         ];
     }
 
-    // Generic fallback for other skills
+    // Generic fallback
     $q = [];
     for ($i = 1; $i <= $count; $i++) {
         $q[] = [
             "stem" => "Sample Question {$i} for {$skill} ({$cefr})",
-            "choices" => ["Correct Choice", "Incorrect Choice A", "Incorrect Choice B", "Incorrect Choice C"],
+            "choices" => ["Correct Choice", "Choice A", "Choice B", "Choice C"],
             "answer_index" => 0
-=======
-    if (!is_array($ai) || empty($ai['cefr'])) {
-        return [
-            'cefr' => $knownCefr ?: 'B1',
-            'ielts_estimate' => 5.5,
-            'toefl_estimate' => 72,
-            'diagnostic' => 'Parse error. Raw: ' . substr(trim($rawText), 0, 140),
-            'strengths' => [],
-            'improvements' => [],
-            'next_steps' => [],
-            'word_count' => $wordCount,
-            'source' => 'fallback'
->>>>>>> 33cf4f2697a1be304ab688270f08808189c02e73
         ];
     }
-=======
-    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' . trim(GEMINI_API_KEY);
->>>>>>> Stashed changes
 
     return [
         "questions" => $q,
@@ -368,9 +382,10 @@ Despite these advancements, challenges such as infrastructure costs and equitabl
 function getFallbackData()
 {
     return [
-        "insight_text" => "Demo mode",
-        "focus_area" => "AI offline",
+        "insight_text" => "Demo mode (AI unavailable)",
+        "focus_area" => "AI Service",
         "daily_plan" => [],
         "resources" => []
     ];
 }
+?>
