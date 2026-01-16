@@ -6,7 +6,6 @@ $page = 'profile';
 $path_prefix = '../';
 $base = "/Seng321";
 
-/* LOGIN KONTROL */
 if (!isset($_SESSION['user'])) {
     header("Location: {$base}/login_part/index.php");
     exit;
@@ -16,7 +15,6 @@ $userId = (int)$_SESSION['user']['id'];
 $message = "";
 $error = "";
 
-/* KULLANICI BİLGİLERİNİ ÇEK */
 $stmt = $pdo->prepare("SELECT id, name, email, password_hash FROM users WHERE id = ? LIMIT 1");
 $stmt->execute([$userId]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -25,10 +23,6 @@ if (!$user) {
     header("Location: {$base}/login_part/logout.php");
     exit;
 }
-
-/* ================================
-   PROFİL BİLGİLERİ GÜNCELLEME
-================================ */
 if (isset($_POST['update_info'])) {
     $name = trim($_POST['name'] ?? '');
 
@@ -45,9 +39,6 @@ if (isset($_POST['update_info'])) {
     }
 }
 
-/* ================================
-   ŞİFRE DEĞİŞTİRME
-================================ */
 if (isset($_POST['change_password'])) {
     $current = $_POST['current_password'] ?? '';
     $new     = $_POST['new_password'] ?? '';
@@ -77,7 +68,7 @@ require_once __DIR__ . '/../includes/header.php';
     <h2>My Profile</h2>
     <p class="muted">Update your personal information and password.</p>
   </div>
-
+<br>
   <?php if ($message): ?>
     <div class="alert success"><?= htmlspecialchars($message) ?></div>
   <?php endif; ?>
@@ -102,7 +93,7 @@ require_once __DIR__ . '/../includes/header.php';
           <label class="form-label">Email (cannot be changed)</label>
           <input class="form-input" type="email" value="<?= htmlspecialchars($user['email']) ?>" disabled>
         </div>
-
+<br>
         <button class="btn primary" type="submit" name="update_info">Update Profile</button>
       </form>
     </section>
@@ -127,7 +118,7 @@ require_once __DIR__ . '/../includes/header.php';
           <label class="form-label">Confirm new password</label>
           <input class="form-input" type="password" name="confirm_password" required>
         </div>
-
+<br>
         <button class="btn" type="submit" name="change_password">Change Password</button>
       </form>
     </section>
