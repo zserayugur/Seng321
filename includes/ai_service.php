@@ -2,6 +2,7 @@
 // includes/ai_service.php
 require_once __DIR__ . '/env.php';
 require_once __DIR__ . '/mock_data.php';
+<<<<<<< Updated upstream
 
 /* ============================================================
    API KEY LOADING ( .gemini_key > env )
@@ -101,12 +102,27 @@ function gemini_generate_text(string $prompt): string
 /* ============================================================
    AI RECOMMENDATIONS (AI Coach)
 ============================================================ */
+=======
 
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// KULLANICI DİKKAT: BURAYA GOOGLE GEMINI API KEY'İNİZİ YAZINIZ
+// USER ATTENTION: PASTE YOUR GOOGLE GEMINI API KEY HERE
+// Link: https://aistudio.google.com/app/apikey
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// .env içinden okuyorsun:
+define('GEMINI_API_KEY', getenv('GEMINI_API_KEY') ?: ''); // Örnek: 'AIzaSy...'
+>>>>>>> Stashed changes
+
+/**
+ * AI Coach (Recommendations)
+ * Fonksiyon ismi uyumluluk için aynı (ChatGPT) ama içi Gemini
+ */
 function fetchAIRecommendationsFromChatGPT()
 {
     $userProfile = getUserProfile();
     $recentResults = getTestResults();
 
+<<<<<<< Updated upstream
     if (ai_mode() === 'mock') {
         return getFallbackData();
     }
@@ -115,26 +131,51 @@ function fetchAIRecommendationsFromChatGPT()
         return getFallbackData();
     }
 
+=======
+    // Mock mode: .env -> AI_MODE=mock
+    $mode = strtolower(trim(getenv('AI_MODE') ?: 'live'));
+    if ($mode === 'mock') {
+        return getFallbackData();
+    }
+
+    // Key yoksa fallback
+    if (empty(GEMINI_API_KEY)) {
+        return getFallbackData();
+    }
+
+>>>>>>> Stashed changes
     $prompt = "
 You are an expert English language tutor. Analyze this student:
 Profile: " . json_encode($userProfile) . "
 Recent Results: " . json_encode($recentResults) . "
 
+<<<<<<< Updated upstream
 Output valid JSON only. No markdown. No backticks.
+=======
+Output valid JSON only. No markdown formatting. No ```json tags.
+>>>>>>> Stashed changes
 Structure:
 {
   \"insight_text\": \"A short 2-sentence diagnostic insight.\",
   \"focus_area\": \"Short phrase (e.g. Grammar & Fluency)\",
   \"daily_plan\": [
+<<<<<<< Updated upstream
     {\"title\":\"Task Name\",\"type\":\"grammar/listening/speaking\",\"duration\":\"15 min\",\"priority\":\"High/Medium/Low\"}
   ],
   \"resources\": [
     {\"title\":\"Resource Name\",\"type\":\"Article/Video/Quiz\",\"description\":\"Short description\"}
+=======
+    {\"title\": \"Task Name\", \"type\": \"grammar/listening/speaking\", \"duration\": \"15 min\", \"priority\": \"High/Medium/Low\"}
+  ],
+  \"resources\": [
+    {\"title\": \"Resource Name\", \"type\": \"Article/Video/Quiz\", \"description\": \"Short description\"}
+>>>>>>> Stashed changes
   ]
 }
 Provide exactly 3 items for daily_plan and 3 items for resources.
 ";
 
+<<<<<<< Updated upstream
     try {
         $raw = gemini_generate_text($prompt);
         $data = json_decode($raw, true);
@@ -295,24 +336,90 @@ function getFallbackTestQuestions($skill, $cefr, $count)
             "answer_index" => 0
         ];
     }
+=======
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' . trim(GEMINI_API_KEY);
+>>>>>>> Stashed changes
 
     $data = [
-        "questions" => $q,
-        "source" => "fallback"
+        'contents' => [
+            [
+                'parts' => [
+                    ['text' => $prompt]
+                ]
+            ]
+        ]
     ];
 
-    if (strtolower($skill) === 'reading') {
-        $data['passage'] = "This is a placeholder reading passage because the AI could not be reached. \n\nLearning a language requires consistent practice. Reading daily helps expand vocabulary and understanding of grammar structures. In this mock test, you can practice answering questions even without a generated text, or try refreshing the page to connect to the AI again.";
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+
+    // XAMPP için SSL kapatılmış
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+    $response = curl_exec($ch);
+
+    if (curl_errno($ch)) {
+        $error_msg = curl_error($ch);
+        curl_close($ch);
+        $fallback = getFallbackData();
+        $fallback['insight_text'] .= " (Connection Error: " . $error_msg . ")";
+        return $fallback;
     }
 
+<<<<<<< Updated upstream
     return $data;
 >>>>>>> 04157ae9377dafc54a14f8937bf7ed7f79e6bf77
+=======
+    curl_close($ch);
+
+    $decodedResponse = json_decode($response, true);
+
+    if (isset($decodedResponse['error'])) {
+        $errorMsg = $decodedResponse['error']['message'] ?? 'Unknown Gemini Error';
+        $fallback = getFallbackData();
+        $fallback['insight_text'] = "Gemini API Error: " . $errorMsg;
+        return $fallback;
+    }
+
+    if (isset($decodedResponse['candidates'][0]['content']['parts'][0]['text'])) {
+        $rawText = $decodedResponse['candidates'][0]['content']['parts'][0]['text'];
+
+        $rawText = str_replace("```json", "", $rawText);
+        $rawText = str_replace("```", "", $rawText);
+
+        $aiData = json_decode($rawText, true);
+
+        if ($aiData) {
+            return $aiData;
+        } else {
+            $fallback = getFallbackData();
+            $fallback['insight_text'] = "Gemini Parse Error. Raw: " . substr($rawText, 0, 100);
+            return $fallback;
+        }
+    }
+
+    $fallback = getFallbackData();
+    $fallback['insight_text'] .= " (No valid response from Gemini)";
+    return $fallback;
+>>>>>>> Stashed changes
 }
 
+/**
+ * Coach fallback
+ */
 function getFallbackData()
 {
     return [
+<<<<<<< Updated upstream
         'insight_text' => "Based on your recent tests, our AI usually detects patterns here. (Fallback Mode)",
+=======
+        'insight_text' => "Based on your recent tests, our AI usually detects patterns here. (API Key Missing Mode)",
+>>>>>>> Stashed changes
         'focus_area' => "Demo Mode",
         'daily_plan' => getAiRecommendations(),
         'resources' => [
@@ -323,6 +430,7 @@ function getFallbackData()
     ];
 }
 
+<<<<<<< Updated upstream
 /* ============================================================
    TEST QUESTION GENERATOR (Grammar / Vocabulary / Reading)
 ============================================================ */
@@ -370,14 +478,57 @@ Return EXACT JSON structure:
             : 'grammar structures';
 
         $prompt = "
+=======
+/**
+ * Test question generator
+ */
+function fetchAITestQuestions(string $skill, string $cefr, int $count = 20): array
+{
+    // Key yoksa fallback
+    if (empty(GEMINI_API_KEY)) {
+        return getFallbackTestQuestions($skill, $cefr, $count);
+    }
+
+    // Mock mode
+    $mode = strtolower(trim(getenv('AI_MODE') ?: 'live'));
+    if ($mode === 'mock') {
+        return getFallbackTestQuestions($skill, $cefr, $count);
+    }
+
+    $skill = strtolower(trim($skill));
+    $cefr  = strtoupper(trim($cefr));
+
+    $structure = ($skill === 'reading')
+        ? '{
+            "passage": "ONE short passage",
+            "questions": [
+              {"stem": "question text", "choices": ["A","B","C","D"], "answer_index": 0}
+            ]
+          }'
+        : '{
+            "questions": [
+              {"stem": "question text", "choices": ["A","B","C","D"], "answer_index": 0}
+            ]
+          }';
+
+    $topicHint = ($skill === 'vocabulary')
+        ? "vocabulary meaning/usage"
+        : (($skill === 'grammar') ? "grammar structures" : "reading comprehension");
+
+    $prompt = "
+>>>>>>> Stashed changes
 You are an English assessment item writer.
 Create CEFR-aligned multiple-choice questions.
 
 Skill: {$skill}
 CEFR Level: {$cefr}
 Count: {$count}
+<<<<<<< Updated upstream
 
 Rules:
+=======
+Constraints:
+>>>>>>> Stashed changes
 - Return VALID JSON ONLY (no markdown, no backticks).
 - Exactly {$count} questions.
 - Each question has exactly 4 choices.
@@ -385,6 +536,7 @@ Rules:
 - Keep difficulty appropriate for CEFR {$cefr}.
 - Focus on: {$topicHint}.
 
+<<<<<<< Updated upstream
 Return EXACT JSON structure:
 {
   \"questions\": [
@@ -459,11 +611,109 @@ Return EXACT JSON structure:
     }
 }
 
+=======
+JSON structure (must match exactly):
+{$structure}
+";
+
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' . trim(GEMINI_API_KEY);
+
+    $data = [
+        'contents' => [
+            [
+                'parts' => [
+                    ['text' => $prompt]
+                ]
+            ]
+        ]
+    ];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+    $response = curl_exec($ch);
+
+    if (curl_errno($ch)) {
+        $error_msg = curl_error($ch);
+        curl_close($ch);
+
+        $fallback = getFallbackTestQuestions($skill, $cefr, $count);
+        $fallback['debug'] = "Gemini connection error: " . $error_msg;
+        return $fallback;
+    }
+    curl_close($ch);
+
+    $decoded = json_decode($response, true);
+
+    if (isset($decoded['error'])) {
+        $fallback = getFallbackTestQuestions($skill, $cefr, $count);
+        $fallback['debug'] = "Gemini API error: " . ($decoded['error']['message'] ?? 'Unknown');
+        return $fallback;
+    }
+
+    $rawText = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? '';
+    $rawText = str_replace(["```json", "```"], "", $rawText);
+
+    $aiData = json_decode(trim($rawText), true);
+    if (!is_array($aiData) || !isset($aiData['questions']) || !is_array($aiData['questions'])) {
+        $fallback = getFallbackTestQuestions($skill, $cefr, $count);
+        $fallback['debug'] = "Gemini parse error. Raw head: " . substr(trim($rawText), 0, 120);
+        return $fallback;
+    }
+
+    // Reading'de passage zorunlu
+    if ($skill === 'reading') {
+        $passage = trim((string)($aiData['passage'] ?? ''));
+        if ($passage === '') {
+            $fallback = getFallbackTestQuestions($skill, $cefr, $count);
+            $fallback['debug'] = "Gemini returned empty passage.";
+            return $fallback;
+        }
+    }
+
+    $questions = array_slice($aiData['questions'], 0, $count);
+
+    foreach ($questions as $i => $q) {
+        if (!isset($q['stem'], $q['choices'], $q['answer_index'])) {
+            return getFallbackTestQuestions($skill, $cefr, $count);
+        }
+        if (!is_array($q['choices']) || count($q['choices']) !== 4) {
+            return getFallbackTestQuestions($skill, $cefr, $count);
+        }
+        $ai = intval($q['answer_index']);
+        if ($ai < 0 || $ai > 3) {
+            return getFallbackTestQuestions($skill, $cefr, $count);
+        }
+        $questions[$i]['answer_index'] = $ai;
+    }
+
+    return [
+        'skill' => $skill,
+        'cefr' => $cefr,
+        'passage' => ($skill === 'reading') ? ($aiData['passage'] ?? '') : null,
+        'questions' => $questions,
+        'source' => 'gemini'
+    ];
+}
+
+/**
+ * Test fallback
+ */
+>>>>>>> Stashed changes
 function getFallbackTestQuestions(string $skill, string $cefr, int $count = 8): array
 {
     $skill = strtolower(trim($skill));
     $cefr  = strtoupper(trim($cefr));
+<<<<<<< Updated upstream
     if ($cefr === '') $cefr = 'B1';
+=======
+>>>>>>> Stashed changes
 
     $qs = [];
     for ($i = 0; $i < $count; $i++) {
@@ -483,6 +733,7 @@ function getFallbackTestQuestions(string $skill, string $cefr, int $count = 8): 
     ];
 }
 
+<<<<<<< Updated upstream
 /* ============================================================
    WRITING EVALUATION (CEFR + IELTS + TOEFL)
 ============================================================ */
@@ -490,11 +741,26 @@ function getFallbackTestQuestions(string $skill, string $cefr, int $count = 8): 
 function fetchAIWritingEvaluation(string $text, string $knownCefr = ''): array
 {
     ensure_session_started();
+=======
+/**
+ * ✅ WRITING EVALUATION (CEFR + IELTS + TOEFL)
+ * DB yazma burada yapılmaz; evaluate_attempt.php DB'ye yazar.
+ */
+function fetchAIWritingEvaluation(string $text, string $knownCefr = ''): array
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+>>>>>>> Stashed changes
 
     $text = trim((string)$text);
     $knownCefr = strtoupper(trim((string)$knownCefr));
     $wordCount = str_word_count(preg_replace('/\s+/', ' ', strip_tags($text)));
 
+<<<<<<< Updated upstream
+=======
+    // Min kelime kontrolü
+>>>>>>> Stashed changes
     if ($wordCount < 30) {
         return [
             'cefr' => $knownCefr ?: 'A2',
@@ -509,16 +775,27 @@ function fetchAIWritingEvaluation(string $text, string $knownCefr = ''): array
         ];
     }
 
+<<<<<<< Updated upstream
     if (ai_mode() === 'mock' || GEMINI_API_KEY === '') {
+=======
+    // Mock mode: .env -> AI_MODE=mock
+    $mode = strtolower(trim(getenv('AI_MODE') ?: 'live'));
+    if ($mode === 'mock') {
+>>>>>>> Stashed changes
         return [
             'cefr' => $knownCefr ?: 'B1',
             'ielts_estimate' => 5.5,
             'toefl_estimate' => 72,
+<<<<<<< Updated upstream
             'diagnostic' => (ai_mode() === 'mock') ? 'Mock evaluation mode (AI_MODE=mock).' : 'API key missing. Using fallback evaluation.',
+=======
+            'diagnostic' => 'Mock evaluation mode (AI_MODE=mock).',
+>>>>>>> Stashed changes
             'strengths' => ['Message is understandable.'],
             'improvements' => ['Use more varied sentence structures.'],
             'next_steps' => ['Add linking words (however, therefore, although).'],
             'word_count' => $wordCount,
+<<<<<<< Updated upstream
             'source' => (ai_mode() === 'mock') ? 'mock' : 'fallback'
         ];
     }
@@ -528,6 +805,32 @@ function fetchAIWritingEvaluation(string $text, string $knownCefr = ''): array
     if (isset($_SESSION['AI_CACHE'][$cacheKey])) {
         $item = $_SESSION['AI_CACHE'][$cacheKey];
         if (is_array($item) && (time() - (int)($item['ts'] ?? 0)) < 6 * 3600) {
+=======
+            'source' => 'mock'
+        ];
+    }
+
+    // Key yoksa fallback
+    if (empty(GEMINI_API_KEY)) {
+        return [
+            'cefr' => $knownCefr ?: 'B1',
+            'ielts_estimate' => 5.5,
+            'toefl_estimate' => 72,
+            'diagnostic' => 'API key missing. Using fallback evaluation.',
+            'strengths' => [],
+            'improvements' => [],
+            'next_steps' => [],
+            'word_count' => $wordCount,
+            'source' => 'fallback'
+        ];
+    }
+
+    // Cache (6 saat)
+    $cacheKey = 'writing_eval_' . hash('sha256', $knownCefr . '|' . $text);
+    if (isset($_SESSION['AI_CACHE'][$cacheKey])) {
+        $item = $_SESSION['AI_CACHE'][$cacheKey];
+        if (is_array($item) && (time() - intval($item['ts'] ?? 0)) < 6 * 3600) {
+>>>>>>> Stashed changes
             $data = $item['data'] ?? null;
             if (is_array($data)) {
                 $data['source'] = 'cache';
@@ -536,9 +839,15 @@ function fetchAIWritingEvaluation(string $text, string $knownCefr = ''): array
         }
     }
 
+<<<<<<< Updated upstream
     // throttle (15 sn)
     $tKey = $cacheKey . '_ts';
     $last = (int)($_SESSION['AI_THROTTLE'][$tKey] ?? 0);
+=======
+    // Throttle (15 sn)
+    $tKey = $cacheKey . '_ts';
+    $last = intval($_SESSION['AI_THROTTLE'][$tKey] ?? 0);
+>>>>>>> Stashed changes
     if ($last && (time() - $last) < 15) {
         return [
             'cefr' => $knownCefr ?: 'B1',
@@ -582,6 +891,7 @@ Student essay:
 \"\"\"{$text}\"\"\"
 ";
 
+<<<<<<< Updated upstream
     try {
         $raw = gemini_generate_text($prompt);
         $ai = json_decode($raw, true);
@@ -616,11 +926,39 @@ Student essay:
         return $result;
 
     } catch (Throwable $e) {
+=======
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' . trim(GEMINI_API_KEY);
+    $payload = [
+        'contents' => [[
+            'parts' => [['text' => $prompt]]
+        ]]
+    ];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+    $response = curl_exec($ch);
+    if (curl_errno($ch)) {
+        $err = curl_error($ch);
+        curl_close($ch);
+>>>>>>> Stashed changes
         return [
             'cefr' => $knownCefr ?: 'B1',
             'ielts_estimate' => 5.5,
             'toefl_estimate' => 72,
+<<<<<<< Updated upstream
             'diagnostic' => 'AI error: ' . $e->getMessage(),
+=======
+            'diagnostic' => 'Connection error: ' . $err,
+>>>>>>> Stashed changes
             'strengths' => [],
             'improvements' => [],
             'next_steps' => [],
@@ -628,4 +966,58 @@ Student essay:
             'source' => 'fallback'
         ];
     }
+<<<<<<< Updated upstream
+=======
+    curl_close($ch);
+
+    $decoded = json_decode($response, true);
+    if (isset($decoded['error'])) {
+        $msg = $decoded['error']['message'] ?? 'Unknown Gemini error';
+        return [
+            'cefr' => $knownCefr ?: 'B1',
+            'ielts_estimate' => 5.5,
+            'toefl_estimate' => 72,
+            'diagnostic' => 'Gemini API error: ' . $msg,
+            'strengths' => [],
+            'improvements' => [],
+            'next_steps' => [],
+            'word_count' => $wordCount,
+            'source' => 'fallback'
+        ];
+    }
+
+    $rawText = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? '';
+    $rawText = str_replace(["```json", "```"], "", $rawText);
+    $ai = json_decode(trim($rawText), true);
+
+    if (!is_array($ai) || empty($ai['cefr'])) {
+        return [
+            'cefr' => $knownCefr ?: 'B1',
+            'ielts_estimate' => 5.5,
+            'toefl_estimate' => 72,
+            'diagnostic' => 'Parse error. Raw: ' . substr(trim($rawText), 0, 140),
+            'strengths' => [],
+            'improvements' => [],
+            'next_steps' => [],
+            'word_count' => $wordCount,
+            'source' => 'fallback'
+        ];
+    }
+
+    $result = [
+        'cefr' => strtoupper(trim((string)$ai['cefr'])),
+        'ielts_estimate' => round((float)($ai['ielts_estimate'] ?? 0), 1),
+        'toefl_estimate' => (int)($ai['toefl_estimate'] ?? 0),
+        'diagnostic' => trim((string)($ai['diagnostic'] ?? '')),
+        'strengths' => is_array($ai['strengths'] ?? null) ? $ai['strengths'] : [],
+        'improvements' => is_array($ai['improvements'] ?? null) ? $ai['improvements'] : [],
+        'next_steps' => is_array($ai['next_steps'] ?? null) ? $ai['next_steps'] : [],
+        'word_count' => $wordCount,
+        'source' => 'gemini'
+    ];
+
+    $_SESSION['AI_CACHE'][$cacheKey] = ['ts' => time(), 'data' => $result];
+
+    return $result;
+>>>>>>> Stashed changes
 }
