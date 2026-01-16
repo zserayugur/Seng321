@@ -98,6 +98,7 @@ if ($role === "admin") {
             <!-- Eğer bu dosyalar sende yoksa bu 2 satırı sil veya dosyaları oluştur -->
             <li><a href="<?php echo $path_prefix; ?>/Seng321/dashboard/instructor_assignments.php" style=" color: #e692beff;">Assignments</a></li>
             <li><a href="<?php echo $base; ?>/instructor/class_codes.php" style=" color: #e692beff;">Class Codes</a></li>
+            <li><a href="<?php echo $base; ?>/assignments/" style=" color: #e692beff;" class="<?php echo (isset($page) && $page === 'requests') ? 'active' : ''; ?>">Assignments</a></li>
 
 
             
