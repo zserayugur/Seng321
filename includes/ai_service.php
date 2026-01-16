@@ -1,4 +1,5 @@
 <?php
+// includes/ai_service.php
 require_once __DIR__ . '/env.php';
 require_once 'mock_data.php';
 
@@ -34,18 +35,37 @@ function fetchAIRecommendationsFromChatGPT()
         return getFallbackData();
     }
 
-    $raw = geminiCall("You are an expert English tutor. Return JSON only. Create a short, motivating study plan for a student at B2 level. Insight must be about language learning consistency. Focus area examples: 'Business Vocabulary', 'Past Perfect Tense', 'IELTS Speaking'. Format: {\"insight_text\":\"...\",\"focus_area\":\"...\",\"daily_plan\":[{\"title\":\"...\",\"duration\":\"...\",\"priority\":\"High/Medium/Low\",\"type\":\"Quiz/Video/Reading\"}],\"resources\":[{\"title\":\"...\",\"description\":\"...\",\"type\":\"Quiz/Video\"}]}");
+    $prompt = "
+You are an expert English tutor. 
+Create a study plan for a B2 student.
+Return VALID JSON only. No markdown. No comments.
 
-    // Extract JSON using regex (handles markdown blocks like ```json ... ```)
+Format:
+{
+  \"insight_text\": \"Short motivating insight about consistency.\",
+  \"focus_area\": \"e.g. Business Vocabulary\",
+  \"daily_plan\": [
+     {\"title\":\"Task 1\",\"duration\":\"15 min\",\"priority\":\"High\",\"type\":\"Quiz\"},
+     {\"title\":\"Task 2\",\"duration\":\"10 min\",\"priority\":\"Medium\",\"type\":\"Video\"}
+  ],
+  \"resources\": [
+     {\"title\":\"Resource 1\",\"description\":\"Desc...\",\"type\":\"Reading\"}
+  ]
+}
+";
+
+    $raw = geminiCall($prompt);
+
     if (preg_match('/\{[\s\S]*\}/', $raw, $matches)) {
         $jsonStr = $matches[0];
+        $jsonStr = cleanJson($jsonStr);
+
         $data = json_decode($jsonStr, true);
-        if ($data)
+        if ($data && isset($data['insight_text'])) {
             return $data;
+        }
     }
 
-    // Fallback if parsing fails
-    error_log("AI Parse Error. Raw output: " . substr($raw, 0, 200));
     return getFallbackData();
 }
 
@@ -60,12 +80,70 @@ function fetchAITestQuestions(string $skill, string $cefr, int $count = 20): arr
 
     $skill = strtolower($skill);
 
-    // 🔥 READING PROMPT
+    // BATCHING LOGIC FOR NON-READING TESTS > 10 QUESTIONS
+    // This ensures we get exactly the requested number of questions by breaking it down.
+    if ($skill !== "reading" && $count > 10) {
+        $batchSize = 10;
+        $batches = ceil($count / $batchSize);
+        $allQuestions = [];
+
+        for ($i = 0; $i < $batches; $i++) {
+            $currentRequestCount = ($i === $batches - 1) ? ($count - ($i * $batchSize)) : $batchSize;
+            if ($currentRequestCount <= 0)
+                break;
+
+            $prompt = "
+You are an expert English teacher.
+Create a JSON object containing exactly {$currentRequestCount} multiple-choice questions to test {$skill}.
+
+DIFFICULTY: Mixed (A2 to C1).
+
+STRICT RULES:
+1. Return VALID JSON only.
+2. The 'questions' array MUST have exactly {$currentRequestCount} items.
+3. No markdown blocks.
+
+Format:
+{\"questions\": [{\"stem\":\"...\",\"choices\":[\"A\",\"B\",\"C\",\"D\"],\"answer_index\":0}, ...]}
+";
+            $raw = geminiCall($prompt);
+
+            $jsonStr = $raw;
+            $jsonStr = cleanJson($jsonStr);
+            $data = json_decode($jsonStr, true);
+
+            if ($data && isset($data['questions'])) {
+                foreach ($data['questions'] as $q) {
+                    $allQuestions[] = $q;
+                }
+            }
+
+            // Short delay to avoid rate limits
+            if ($i < $batches - 1)
+                usleep(500000);
+        }
+
+        if (empty($allQuestions)) {
+            return getFallbackTestQuestions($skill, $cefr, $count);
+        }
+
+        $allQuestions = array_slice($allQuestions, 0, $count);
+
+        return [
+            "skill" => $skill,
+            "cefr" => $cefr,
+            "passage" => null,
+            "questions" => normalizeQuestionsForUI($allQuestions),
+            "source" => "gemini_batched"
+        ];
+    }
+
+    // STANDARD LOGIC (Reading or Small Counts)
     if ($skill === "reading") {
         $prompt = "
 You are creating an English reading test.
 
-First write a CEFR {$cefr} level reading passage of 120–180 words.
+First write a long and detailed CEFR {$cefr} level reading passage of 250–350 words.
 
 Then create {$count} multiple choice questions based ONLY on that passage.
 
@@ -85,20 +163,25 @@ Format:
 }
 ";
     } else {
-        // Grammar / Vocab
         $prompt = "
-Return JSON only.
-No markdown.
-No explanation.
+You are an expert English teacher.
+Create a JSON object containing exactly {$count} multiple-choice questions to test {$skill}.
 
-Skill: {$skill}
-Level: {$cefr}
-Count: {$count}
+Difficulty Distribution:
+- 5 Easy (A2)
+- 10 Medium (B1-B2)
+- 5 Hard (C1)
+
+Strict Output Rules:
+- Return valid JSON only.
+- No markdown formatting (no ```json).
+- The 'questions' array MUST have exactly {$count} items.
 
 Format:
 {
   \"questions\": [
-     {\"stem\":\"\",\"choices\":[\"\",\"\",\"\",\"\"],\"answer_index\":0}
+     {\"stem\":\"Question text...\",\"choices\":[\"A\",\"B\",\"C\",\"D\"],\"answer_index\":0},
+     ...
   ]
 }
 ";
@@ -106,27 +189,14 @@ Format:
 
     $raw = geminiCall($prompt);
 
-    // Extract JSON using regex (handles markdown blocks like ```json ... ```)
     if (!preg_match('/\{[\s\S]*\}/', $raw, $m)) {
-        error_log("AI Questions Error: No JSON found in response.");
         return getFallbackTestQuestions($skill, $cefr, $count);
     }
 
-    // Try to decode
-    $data = json_decode($m[0], true);
+    $jsonStr = cleanJson($m[0]);
+    $data = json_decode($jsonStr, true);
 
-    // If decoding failed, it might be due to control characters. Try to clean it.
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        $cleanJson = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $m[0]); // Remove control chars
-        $data = json_decode($cleanJson, true);
-    }
-
-    if (!$data) {
-        error_log("AI Questions JSON Decode Error: " . json_last_error_msg());
-        return getFallbackTestQuestions($skill, $cefr, $count);
-    }
-
-    if (!isset($data["questions"])) {
+    if (!$data || !isset($data["questions"])) {
         return getFallbackTestQuestions($skill, $cefr, $count);
     }
 
@@ -156,11 +226,21 @@ Format:
 
 function geminiCall(string $prompt): string
 {
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" . GEMINI_API_KEY;
+    // Using valid working model
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=" . GEMINI_API_KEY;
 
     $payload = [
-        "contents" => [["parts" => [["text" => $prompt]]]]
+        "contents" => [["parts" => [["text" => $prompt]]]],
+        "generationConfig" => [
+            "start_of_sequence_token" => null,
+            "response_mime_type" => "application/json",
+            "maxOutputTokens" => 8192,
+            "temperature" => 0.7
+        ]
     ];
+
+    $maxRetries = 3;
+    $attempt = 0;
 
     $ch = curl_init($url);
     curl_setopt_array($ch, [
@@ -169,35 +249,57 @@ function geminiCall(string $prompt): string
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
         CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => false
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_TIMEOUT => 45
     ]);
 
-    $response = curl_exec($ch);
-    $curlError = curl_error($ch);
+    while ($attempt < $maxRetries) {
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        // Success
+        if (!$curlError && $httpCode === 200) {
+            curl_close($ch);
+            $json = json_decode($response, true);
+            return $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        }
+
+        // Retryable errors: 429 (Too Many Requests) or 5xx (Server Error)
+        if ($httpCode === 429 || $httpCode >= 500) {
+            $attempt++;
+            error_log("Gemini Retry {$attempt}/{$maxRetries} due to HTTP {$httpCode}...");
+            sleep(2 * $attempt); // Backoff: 2s, 4s, 6s...
+            continue;
+        }
+
+        // Fatal error (400, 401, 403, 404, etc.)
+        error_log("Gemini Fatal Error: HTTP {$httpCode}. Response: " . substr($response, 0, 200));
+        break;
+    }
+
     curl_close($ch);
-
-    if ($curlError) {
-        error_log("Gemini cURL Error: " . $curlError);
-        return "";
-    }
-
-    $json = json_decode($response, true);
-
-    if (!isset($json['candidates'][0]['content']['parts'][0]['text'])) {
-        error_log("Gemini API unexpected response: " . substr($response, 0, 500));
-        return "";
-    }
-
-    return $json['candidates'][0]['content']['parts'][0]['text'];
+    return "";
 }
 
 /* ============================================================
-   NORMALIZER
+   HELPERS & NORMALIZER
 ============================================================ */
+
+function cleanJson($jsonStr)
+{
+    $jsonStr = preg_replace('/^```json\s*/i', '', $jsonStr);
+    $jsonStr = preg_replace('/^```\s*/i', '', $jsonStr);
+    $jsonStr = preg_replace('/\s*```$/', '', $jsonStr);
+    return preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $jsonStr);
+}
 
 function normalizeQuestionsForUI($questions)
 {
     $out = [];
+    // Ensure input is array
+    if (!is_array($questions))
+        return [];
 
     foreach ($questions as $q) {
         $stem = $q["stem"] ?? $q["question"] ?? "";
@@ -214,7 +316,6 @@ function normalizeQuestionsForUI($questions)
             "answer_index" => intval($ans)
         ];
     }
-
     return $out;
 }
 
@@ -224,33 +325,67 @@ function normalizeQuestionsForUI($questions)
 
 function getFallbackTestQuestions($skill, $cefr, $count)
 {
+    if (strtolower($skill) === 'reading') {
+        $passage = "The Future of Urban Transportation\n\nAs cities around the world continue to grow, the challenge of moving people efficiently and sustainably becomes increasingly urgent. Urban transportation is undergoing a major transformation, driven by technological advancements and shifting environmental priorities.\n\nThe rise of electric vehicles (EVs) is a cornerstone of this shift. Governments are incentivizing the adoption of EVs to reduce air pollution and noise levels in densely populated areas. However, simply replacing gas-powered cars with electric ones is not a complete solution. Congestion remains a critical issue.\n\nPublic transportation is also evolving. High-speed trains and autonomous buses are being tested in various metropolises. These innovations aim to make public transit faster, safer, and more convenient than driving.";
+
+        $questions = [
+            [
+                "stem" => "What is the primary focus of the passage?",
+                "choices" => ["History of cars", "Decline of public transport", "Transformation of urban transport", "Rural living"],
+                "answer_index" => 2
+            ],
+            [
+                "stem" => "Why are governments encouraging electric vehicles?",
+                "choices" => ["To increase noise", "To reduce air pollution and noise", "To make cars expensive", "To use fossil fuels"],
+                "answer_index" => 1
+            ],
+            [
+                "stem" => "What remains a critical issue despite EVs?",
+                "choices" => ["Speed", "Safety", "Congestion", "Comfort"],
+                "answer_index" => 2
+            ]
+        ];
+
+        // Fill up to count
+        while (count($questions) < $count) {
+            $base = $questions[count($questions) % 3];
+            $questions[] = [
+                "stem" => $base["stem"] . " (Variant " . (count($questions) + 1) . ")",
+                "choices" => $base["choices"],
+                "answer_index" => $base["answer_index"]
+            ];
+        }
+
+        return [
+            "passage" => $passage,
+            "questions" => array_slice($questions, 0, $count),
+            "source" => "fallback"
+        ];
+    }
+
+    // Generic fallback
     $q = [];
     for ($i = 1; $i <= $count; $i++) {
         $q[] = [
-            "stem" => "Mock Question {$i} for {$skill} ({$cefr})",
-            "choices" => ["Option A", "Option B", "Option C", "Option D"],
+            "stem" => "Sample Question {$i} for {$skill} ({$cefr})",
+            "choices" => ["Correct Choice", "Choice A", "Choice B", "Choice C"],
             "answer_index" => 0
         ];
     }
 
-    $data = [
+    return [
         "questions" => $q,
         "source" => "fallback"
     ];
-
-    if (strtolower($skill) === 'reading') {
-        $data['passage'] = "This is a placeholder reading passage because the AI could not be reached. \n\nLearning a language requires consistent practice. Reading daily helps expand vocabulary and understanding of grammar structures. In this mock test, you can practice answering questions even without a generated text, or try refreshing the page to connect to the AI again.";
-    }
-
-    return $data;
 }
 
 function getFallbackData()
 {
     return [
-        "insight_text" => "Demo mode",
-        "focus_area" => "AI offline",
+        "insight_text" => "Demo mode (AI unavailable)",
+        "focus_area" => "AI Service",
         "daily_plan" => [],
         "resources" => []
     ];
 }
+?>

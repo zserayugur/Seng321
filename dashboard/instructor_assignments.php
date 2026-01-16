@@ -12,7 +12,8 @@ if (current_user_role() !== "INSTRUCTOR") {
 
 $instructor_id = current_user_id();
 $errors = [];
-$success = "";
+$success = (isset($_GET['ok']) && $_GET['ok'] == '1') ? "Assignment başarıyla atandı." : "";
+
 
 $allowed_types = ['writing','speaking','listening','vocabulary','grammar','reading'];
 
@@ -58,6 +59,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 
   if (empty($errors)) {
+
+// ✅ Duplicate guard: aynı öğrenciye aynı türde "pending" varsa tekrar atama
+$dup = $pdo->prepare("
+  SELECT id FROM assignments
+  WHERE instructor_id=? AND student_id=? AND type=? AND status='pending'
+  LIMIT 1
+");
+$dup->execute([$instructor_id, $student_id, $type]);
+if ($dup->fetch()) {
+  header("Location: " . $_SERVER['PHP_SELF'] . "?ok=1");
+  exit;
+}
+
+
     try {
       $ins = $pdo->prepare("
         INSERT INTO assignments (instructor_id, student_id, type, title, due_at)
@@ -66,6 +81,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $title_db = ($title === '') ? null : $title;
       $ins->execute([$instructor_id, $student_id, $type, $title_db, $due_at]);
       $success = "Assignment başarıyla atandı.";
+      header("Location: " . $_SERVER['PHP_SELF'] . "?ok=1");
+exit;
+
+
     } catch (Throwable $e) {
       $errors[] = "DB hatası: " . $e->getMessage();
     }

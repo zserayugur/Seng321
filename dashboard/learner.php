@@ -63,25 +63,7 @@ function nice_status($s) {
   Welcome, <b><?= h($_SESSION["user"]["name"] ?? "Student") ?></b>
 </p>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:16px 0;">
-  <div style="border:1px solid #e5e5e5;border-radius:12px;padding:14px;">
-    <h3 style="margin:0 0 6px 0;">Speaking</h3>
-    <p style="margin:0 0 10px 0;opacity:.85;">10s prep + 150s recording</p>
-    <a href="/Seng321/pages/speaking.php">Start Speaking</a>
-  </div>
 
-  <div style="border:1px solid #e5e5e5;border-radius:12px;padding:14px;">
-    <h3 style="margin:0 0 6px 0;">Writing</h3>
-    <p style="margin:0 0 10px 0;opacity:.85;">250–450 words / 50 min</p>
-    <a href="/Seng321/pages/writing.php">Start Writing</a>
-  </div>
-
-  <div style="border:1px solid #e5e5e5;border-radius:12px;padding:14px;">
-    <h3 style="margin:0 0 6px 0;">Listening</h3>
-    <p style="margin:0 0 10px 0;opacity:.85;">Part 1 & Part 2 (10 min)</p>
-    <a href="/Seng321/pages/listening.php">Start Listening</a>
-  </div>
-</div>
 
 <div style="border:1px solid #e5e5e5;border-radius:12px;padding:14px;margin:16px 0;">
   <h3 style="margin:0 0 10px 0;">Assignments</h3>

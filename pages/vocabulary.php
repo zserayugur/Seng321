@@ -108,24 +108,22 @@ $state = $_SESSION[$sessionKey] ?? null;
             $_SESSION[$sessionKey]["saved"] = true;
 
             // 1. Determine new level
-            $oldLevel = $profile["current_level"] ?? "B1";
-            $levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
-            $idxLvl = array_search($oldLevel, $levels);
-            if ($idxLvl === false)
-                $idxLvl = 2;
-
-            $change = 0;
-            if ($pct >= 80)
-                $change = 1;      // Level Up
+            // 1. Determine new level based on Mixed-Difficulty Score
+            // 0-20% -> A1, 21-40% -> A2, 41-60% -> B1, 61-80% -> B2, 81-95% -> C1, >95% -> C2
+            if ($pct <= 20)
+                $newLevel = "A1";
             elseif ($pct <= 40)
-                $change = -1; // Level Down
+                $newLevel = "A2";
+            elseif ($pct <= 60)
+                $newLevel = "B1";
+            elseif ($pct <= 80)
+                $newLevel = "B2";
+            elseif ($pct <= 95)
+                $newLevel = "C1";
+            else
+                $newLevel = "C2";
 
-            $newIdx = $idxLvl + $change;
-            if ($newIdx < 0)
-                $newIdx = 0;
-            if ($newIdx >= count($levels))
-                $newIdx = count($levels) - 1;
-            $newLevel = $levels[$newIdx];
+            $change = 1; // Always animate progress for new placement
 
             // 2. Update Profile
             $mapIelts = ["A1" => 3.0, "A2" => 4.0, "B1" => 5.0, "B2" => 6.0, "C1" => 7.0, "C2" => 8.0];

@@ -1,81 +1,162 @@
 <?php
-// Centralized Mock Data Source
+// includes/mock_data.php - NOW CONVERTED TO REAL DB ADAPTER
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/auth_guard.php';
 
-// FR23: Previous Result Storage
-// FR23: Previous Result Storage
-function getTestResults()
+function getTestResults(int $limit = 8): array
 {
-    if (isset($_SESSION['test_history']) && !empty($_SESSION['test_history'])) {
-        // Detect old mock data (ID 101 is the signature of the old static data)
-        // New data uses time() as ID, which is a large integer.
-        $first = $_SESSION['test_history'][0] ?? null;
-        if ($first && isset($first['id']) && $first['id'] === 101) {
-            $_SESSION['test_history'] = [];
-        }
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    $uid = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : 0;
+    if ($uid <= 0) return [];
 
-        // Also check the LAST item just in case they added new ones on top
-        $last = end($_SESSION['test_history']);
-        if ($last && isset($last['id']) && $last['id'] === 105) {
-            // Filter out IDs < 100000 (old mocks)
-            $_SESSION['test_history'] = array_filter($_SESSION['test_history'], function ($item) {
-                return isset($item['id']) && $item['id'] > 100000;
-            });
-        }
-    }
+    // PDO
+    $pdo = db(); // sende farklıysa: getPDO() / $GLOBALS['pdo'] vs.
 
-    if (!isset($_SESSION['test_history'])) {
-        // Init with empty
-        $_SESSION['test_history'] = [];
+    $sql = "
+      SELECT
+        a.category,
+        ar.score_percent,
+        ar.correct_count,
+        ar.wrong_count,
+        ar.cefr_estimate,
+        ar.created_at
+      FROM assessments a
+      JOIN assessment_results ar ON ar.assessment_id = a.id
+      WHERE a.user_id = :uid
+      ORDER BY ar.created_at DESC
+      LIMIT :lim
+    ";
+
+    $st = $pdo->prepare($sql);
+    $st->bindValue(':uid', $uid, PDO::PARAM_INT);
+    $st->bindValue(':lim', $limit, PDO::PARAM_INT);
+    $st->execute();
+
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    if (!$rows) return [];
+
+    // UI/AI coach tarafı için basit normalize
+    $out = [];
+    foreach ($rows as $r) {
+        $out[] = [
+            'category' => $r['category'],
+            'score_percent' => (float)$r['score_percent'],
+            'correct' => (int)$r['correct_count'],
+            'wrong' => (int)$r['wrong_count'],
+            'cefr' => $r['cefr_estimate'],
+            'date' => $r['created_at'],
+        ];
     }
-    return $_SESSION['test_history'];
+    return $out;
 }
 
 function addTestResult($result)
 {
-    if (!isset($_SESSION['test_history'])) {
-        getTestResults(); // Init
+    global $pdo;
+    $userId = current_user_id();
+
+    $sql = "INSERT INTO ai_test_results (user_id, test_type, test_name, score, max_score, cefr_level, result_json) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+    $jsonData = isset($result['details']) ? json_encode($result['details']) : null;
+
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            $userId,
+            $result['type'],
+            $result['test'],
+            $result['score'],
+            $result['max_score'],
+            $result['level'],
+            $jsonData
+        ]);
+    } catch (PDOException $e) {
+        error_log("DB Insert Test Result Error: " . $e->getMessage());
+        // Fail silently or maybe save to session as backup?
+        // For now, silent fail to avoid breaking UI
     }
-    // Prepend new result
-    array_unshift($_SESSION['test_history'], $result);
 }
 
-// FR10: CEFR status
 function getUserProfile()
 {
-    if (!isset($_SESSION['user_profile'])) {
-        $_SESSION['user_profile'] = [
-            "name" => "Irem Nur",
-            "current_level" => "A1", // Default to Beginner
+    global $pdo;
+    $userId = current_user_id();
+
+    try {
+        $stmt = $pdo->prepare("SELECT name, email, cefr_level, ielts_estimate, toefl_estimate FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        // If column missing or DB error, ignore and fall through to fallback
+        $user = false;
+        error_log("DB Profile Fetch Error: " . $e->getMessage());
+    }
+
+    if (!$user) {
+        // Fallback mainly for dev environment if user not found or DB schema mismatch
+        return [
+            "name" => "Guest",
+            "current_level" => "Not Determined",
             "target_level" => "C1",
-            "ielts_estimate" => 3.0,
-            "toefl_estimate" => 20,
+            "ielts_estimate" => 0,
+            "toefl_estimate" => 0,
             "progress_percent" => 0,
             "streak_days" => 1
         ];
     }
 
-    // Auto-fix: If user is stuck on "B1" default with NO history, reset to A1
-    // This fixes the issue for the current active user immediately
-    if ($_SESSION['user_profile']['current_level'] === 'B1' && empty($_SESSION['test_history'])) {
-        $_SESSION['user_profile']['current_level'] = 'A1';
-        $_SESSION['user_profile']['ielts_estimate'] = 3.0;
-        $_SESSION['user_profile']['toefl_estimate'] = 20;
-    }
-
-    return $_SESSION['user_profile'];
+    return [
+        "name" => $user['name'] ?? "User",
+        "current_level" => $user['cefr_level'] ?? "Not Determined",
+        "target_level" => "C1", // Hardcoded for now or add column
+        "ielts_estimate" => floatval($user['ielts_estimate'] ?? 0),
+        "toefl_estimate" => intval($user['toefl_estimate'] ?? 0),
+        "progress_percent" => 50, // Could be calculated
+        "streak_days" => 1
+    ];
 }
 
 function updateUserProfile($updates)
 {
-    if (!isset($_SESSION['user_profile'])) {
-        getUserProfile(); // Init
-    }
+    global $pdo;
+    $userId = current_user_id();
+
+    // Map UI keys to DB columns
+    $map = [
+        "current_level" => "cefr_level",
+        "ielts_estimate" => "ielts_estimate",
+        "toefl_estimate" => "toefl_estimate"
+    ];
+
+    $setParts = [];
+    $params = [];
+
     foreach ($updates as $k => $v) {
-        $_SESSION['user_profile'][$k] = $v;
+        if (isset($map[$k])) {
+            $col = $map[$k];
+            $setParts[] = "$col = ?";
+            $params[] = $v;
+        }
+    }
+
+    if (empty($setParts))
+        return;
+
+    $params[] = $userId;
+    $sql = "UPDATE users SET " . implode(", ", $setParts) . " WHERE id = ?";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+
+    // Also update session to reflect immediate changes
+    if (isset($_SESSION['user_profile'])) {
+        foreach ($updates as $k => $v) {
+            $_SESSION['user_profile'][$k] = $v;
+        }
     }
 }
 
-// FR13: AI Recommendations
+// Keep the mock function for recommendations as it doesn't need DB yet (can be added later)
 function getAiRecommendations()
 {
     return [

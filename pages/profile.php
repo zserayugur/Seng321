@@ -6,7 +6,6 @@ $page = 'profile';
 $path_prefix = '../';
 $base = "/Seng321";
 
-/* LOGIN KONTROL */
 if (!isset($_SESSION['user'])) {
     header("Location: {$base}/login_part/index.php");
     exit;
@@ -16,8 +15,11 @@ $userId = (int)$_SESSION['user']['id'];
 $message = "";
 $error = "";
 
-/* KULLANICI BİLGİLERİNİ ÇEK */
-$stmt = $pdo->prepare("SELECT id, name, email, password_hash FROM users WHERE id = ? LIMIT 1");
+/* USER FETCH */
+$stmt = $pdo->prepare("
+    SELECT id, name, email, password_hash, education_level, institution
+    FROM users WHERE id = ? LIMIT 1
+");
 $stmt->execute([$userId]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -26,9 +28,7 @@ if (!$user) {
     exit;
 }
 
-/* ================================
-   PROFİL BİLGİLERİ GÜNCELLEME
-================================ */
+/* UPDATE PERSONAL INFO */
 if (isset($_POST['update_info'])) {
     $name = trim($_POST['name'] ?? '');
 
@@ -45,9 +45,29 @@ if (isset($_POST['update_info'])) {
     }
 }
 
-/* ================================
-   ŞİFRE DEĞİŞTİRME
-================================ */
+/* UPDATE EDUCATION INFO */
+if (isset($_POST['update_education'])) {
+    $level = $_POST['education_level'] ?? null;
+    $inst  = trim($_POST['institution'] ?? '');
+
+    $stmt = $pdo->prepare("
+        UPDATE users 
+        SET education_level = ?, institution = ?
+        WHERE id = ?
+    ");
+    $stmt->execute([
+        $level ?: null,
+        $inst ?: null,
+        $userId
+    ]);
+
+    $user['education_level'] = $level;
+    $user['institution'] = $inst;
+
+    $message = "Education information updated successfully.";
+}
+
+/* CHANGE PASSWORD */
 if (isset($_POST['change_password'])) {
     $current = $_POST['current_password'] ?? '';
     $new     = $_POST['new_password'] ?? '';
@@ -73,69 +93,119 @@ require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="profile-page">
-  <div class="page-title">
-    <h2>My Profile</h2>
-    <p class="muted">Update your personal information and password.</p>
-  </div>
+    <div class="page-title">
+        <h2>My Profile</h2>
+        <p class="muted">Update your personal, education information and password.</p>
+    </div>
 
-  <?php if ($message): ?>
-    <div class="alert success"><?= htmlspecialchars($message) ?></div>
-  <?php endif; ?>
+    <?php if ($message): ?>
+        <div class="alert success"><?= htmlspecialchars($message) ?></div>
+    <?php endif; ?>
 
-  <?php if ($error): ?>
-    <div class="alert error"><?= htmlspecialchars($error) ?></div>
-  <?php endif; ?>
+    <?php if ($error): ?>
+        <div class="alert error"><?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
 
-  <div class="profile-grid">
-    <section class="card">
-      <div class="card-header">
-        <h3>Personal Information</h3>
-      </div>
+    <div class="profile-grid">
 
-      <form method="POST" class="form">
-        <div class="form-row">
-          <label class="form-label">Full Name</label>
-          <input class="form-input" type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>" required>
-        </div>
+        <!-- PERSONAL INFO -->
+        <section class="card">
+            <div class="card-header">
+                <h3>Personal Information</h3>
+            </div>
 
-        <div class="form-row">
-          <label class="form-label">Email (cannot be changed)</label>
-          <input class="form-input" type="email" value="<?= htmlspecialchars($user['email']) ?>" disabled>
-        </div>
+            <form method="POST" class="form">
+                <div class="form-row">
+                    <label class="form-label">Full Name</label>
+                    <input class="form-input" type="text" name="name"
+                           value="<?= htmlspecialchars($user['name']) ?>" required>
+                </div>
 
-        <button class="btn primary" type="submit" name="update_info">Update Profile</button>
-      </form>
-    </section>
+                <div class="form-row">
+                    <label class="form-label">Email (cannot be changed)</label>
+                    <input class="form-input" type="email"
+                           value="<?= htmlspecialchars($user['email']) ?>" disabled>
+                </div>
 
-    <section class="card">
-      <div class="card-header">
-        <h3>Change Password</h3>
-      </div>
+                <button class="btn primary" type="submit" name="update_info">
+                    Update Profile
+                </button>
+            </form>
+        </section>
 
-      <form method="POST" class="form">
-        <div class="form-row">
-          <label class="form-label">Current password</label>
-          <input class="form-input" type="password" name="current_password" required>
-        </div>
+        <!-- EDUCATION INFO -->
+        <section class="card">
+            <div class="card-header">
+                <h3>Education Information</h3>
+            </div>
 
-        <div class="form-row">
-          <label class="form-label">New password</label>
-          <input class="form-input" type="password" name="new_password" required>
-        </div>
+            <form method="POST" class="form">
+                <div class="form-row">
+                    <label class="form-label">Education Level</label>
+                    <select class="form-input" name="education_level">
+                        <option value="">— Select —</option>
+                        <option value="High School" <?= ($user['education_level'] === 'High School') ? 'selected' : '' ?>>High School</option>
+                        <option value="Undergraduate" <?= ($user['education_level'] === 'Undergraduate') ? 'selected' : '' ?>>Undergraduate</option>
+                        <option value="Graduate" <?= ($user['education_level'] === 'Graduate') ? 'selected' : '' ?>>Graduate</option>
+                        <option value="Other" <?= ($user['education_level'] === 'Other') ? 'selected' : '' ?>>Other</option>
+                    </select>
+                </div>
 
-        <div class="form-row">
-          <label class="form-label">Confirm new password</label>
-          <input class="form-input" type="password" name="confirm_password" required>
-        </div>
+                <div class="form-row">
+                    <label class="form-label">Institution / School</label>
+                    <input class="form-input" type="text" name="institution"
+                           value="<?= htmlspecialchars($user['institution'] ?? '') ?>">
+                </div>
 
-        <button class="btn" type="submit" name="change_password">Change Password</button>
-      </form>
-    </section>
-  </div>
+                <button class="btn primary" type="submit" name="update_education">
+                    Save Education Info
+                </button>
+            </form>
+        </section>
 
-  <div class="profile-footer">
-    <a class="link" href="<?= $base ?>/dashboard/learner.php">← Back to Dashboard</a>
-  </div>
+        <!-- CHANGE PASSWORD -->
+        <section class="card">
+            <div class="card-header">
+                <h3>Change Password</h3>
+            </div>
+
+            <form method="POST" class="form">
+                <div class="form-row">
+                    <label class="form-label">Current password</label>
+                    <input class="form-input" type="password" name="current_password" required>
+                </div>
+
+                <div class="form-row">
+                    <label class="form-label">New password</label>
+                    <input class="form-input" type="password" name="new_password" required>
+                </div>
+
+                <div class="form-row">
+                    <label class="form-label">Confirm new password</label>
+                    <input class="form-input" type="password" name="confirm_password" required>
+                </div>
+
+                <button class="btn" type="submit" name="change_password">
+                    Change Password
+                </button>
+            </form>
+        </section>
+
+    </div>
+    <script>
+        setTimeout(() => {
+        const alert = document.querySelector('.alert.success, .alert.error');
+            if (alert) {
+                alert.style.opacity = '0';
+             alert.style.transition = 'opacity 0.4s ease';
+                setTimeout(() => alert.remove(), 400);
+         }
+        }, 3000);
+    </script>
+
+    <div class="profile-footer">
+        <a class="link" href="<?= $base ?>/dashboard/learner.php">← Back to Dashboard</a>
+    </div>
 </div>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
