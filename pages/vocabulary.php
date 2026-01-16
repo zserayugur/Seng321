@@ -157,6 +157,7 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
             </div>
 
+<<<<<<< HEAD
     <?php else: ?>
         <?php 
         // Auto-submit if time expired
@@ -226,6 +227,24 @@ require_once __DIR__ . '/../includes/header.php';
         })();
         </script>
     <?php endif; ?>
+=======
+            <button id="btnStart" class="btn-primary" style="padding: 12px 30px;">Start Vocabulary Test</button>
+            <p id="loading" style="display:none; color: #666; margin-top: 15px;">Generating your test... Please wait...
+            </p>
+        </div>
+
+        <!-- Step 2: Quiz -->
+        <div id="quizArea" style="display:none; margin-top: 30px;">
+            <form id="quizForm" onsubmit="handleSubmit(event)">
+                <div id="questionsContainer"></div>
+
+                <div style="text-align: right; margin-top: 25px;">
+                    <button type="submit" id="btnSubmit" class="btn-primary">Submit Answers</button>
+                </div>
+            </form>
+        </div>
+    </section>
+>>>>>>> f9c5a10f6a88173f8f11e5c33ffaf38fd03397ee
 
     <!-- Step 3: Results -->
     <section id="resultArea" class="card" style="display:none; margin-top: 20px;">
