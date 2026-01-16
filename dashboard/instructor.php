@@ -35,6 +35,9 @@ $rows = $stmt->fetchAll();
 
 <li><a href="<?php echo $base; ?>/instructor/class_codes.php">Class Codes</a></li>
 
+<a class="btn" href="/Seng321/instructor/requests.php">View Join Requests</a>
+<li><a href="<?php echo $base; ?>/instructor/assignments.php">Assignments</a></li>
+
 
 <hr style="margin:18px 0;">
 

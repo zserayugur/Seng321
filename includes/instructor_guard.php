@@ -1,4 +1,5 @@
 <?php
+// includes/instructor_guard.php
 require_once __DIR__ . "/auth_guard.php";
 
 $role = strtolower(trim($_SESSION["user"]["role"] ?? ""));
