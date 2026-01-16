@@ -1,37 +1,30 @@
 <?php
-// includes/env.php
+require_once __DIR__ . '/../../includes/auth_guard.php';
+require_once __DIR__ . '/../../includes/attempt_repo.php';
 
-$envFile = __DIR__ . '/../.env';
+header('Content-Type: application/json');
 
-// EKRANA ASLA BASMA. Debug gerekiyorsa:
-// error_log("Looking for env at: " . $envFile);
+$userId = current_user_id();
+$attemptId = (int)($_POST['attempt_id'] ?? 0);
 
-if (!file_exists($envFile)) {
-    return;
+$attempt = get_attempt($attemptId, $userId);
+if (!$attempt) {
+  http_response_code(404);
+  echo json_encode(["error"=>"attempt not found"]);
+  exit;
 }
 
-$lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+/* MOCK evaluation (AI yok) */
+$mock = [
+  "score_percent" => rand(60, 90),
+  "message" => "Mock evaluation. AI will be integrated later.",
+  "details" => [
+    "fluency" => rand(6, 9),
+    "vocabulary" => rand(6, 9),
+    "grammar" => rand(6, 9),
+    "coherence" => rand(6, 9)
+  ]
+];
 
-foreach ($lines as $line) {
-    $line = trim($line);
-    if ($line === '' || str_starts_with($line, '#'))
-        continue;
-
-    [$key, $value] = array_pad(explode('=', $line, 2), 2, null);
-    if (!$key || $value === null)
-        continue;
-
-    $key = trim($key);
-    $value = trim($value);
-
-    // Tırnakları temizle: KEY="value" veya KEY='value'
-    if (
-        (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
-        (str_starts_with($value, "'") && str_ends_with($value, "'"))
-    ) {
-        $value = substr($value, 1, -1);
-    }
-
-    putenv("$key=$value");
-    $_ENV[$key] = $value;
-}
+save_ai_result($attemptId, "mock", $mock);
+echo json_encode(["ok"=>true, "evaluation"=>$mock]);
