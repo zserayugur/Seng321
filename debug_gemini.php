@@ -31,7 +31,7 @@ echo "<h2>2. Testing API Connection</h2>";
 if (empty($key)) {
     echo "Cannot test connection: No API Key.<br>";
 } else {
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemma-3-1b-it:generateContent?key=" . $key;
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=" . $key;
 
     // Simple verification prompt
     $payload = [
@@ -40,7 +40,7 @@ if (empty($key)) {
         ]
     ];
 
-    echo "Endpoint: " . htmlspecialchars("https://generativelanguage.googleapis.com/...models/gemini-flash-latest...") . "<br>";
+    echo "Endpoint: " . htmlspecialchars("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent") . "<br>";
 
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_POST, true);

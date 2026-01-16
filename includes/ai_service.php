@@ -181,7 +181,7 @@ Format:
 
 function geminiCall(string $prompt): string
 {
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemma-3-1b-it:generateContent?key=" . GEMINI_API_KEY;
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=" . GEMINI_API_KEY;
 
     $payload = [
         "contents" => [["parts" => [["text" => $prompt]]]]
@@ -257,25 +257,104 @@ function normalizeQuestionsForUI($questions)
 
 function getFallbackTestQuestions($skill, $cefr, $count)
 {
+    // Fallback meant to be meaningful for Reading
+    if (strtolower($skill) === 'reading') {
+        $passage = "The Future of Urban Transportation
+
+As cities around the world continue to grow, the challenge of moving people efficiently and sustainably becomes increasingly urgent. Urban transportation is undergoing a major transformation, driven by technological advancements and shifting environmental priorities.
+
+The rise of electric vehicles (EVs) is a cornerstone of this shift. Governments are incentivizing the adoption of EVs to reduce air pollution and noise levels in densely populated areas. However, simply replacing gas-powered cars with electric ones is not a complete solution. Congestion remains a critical issue. To address this, many cities are investing in smart traffic management systems that use artificial intelligence to optimize traffic light timing and reduce bottlenecks.
+
+Public transportation is also evolving. High-speed trains and autonomous buses are being tested in various metropolises. These innovations aim to make public transit faster, safer, and more convenient than driving. Furthermore, the concept of 'Mobility as a Service' (MaaS) is gaining traction. MaaS platforms integrate different modes of transport—buses, trains, bike-shares, and ride-hailing app —into a single, seamless interface, allowing users to plan and pay for their entire journey with one click.
+
+Another significant trend is the resurgence of cycling and walking. Urban planners are redesigning streets to prioritize pedestrians and cyclists, creating dedicated lanes and car-free zones. This 'active travel' approach not only alleviates traffic but also promotes public health.
+
+Despite these advancements, challenges such as infrastructure costs and equitable access remain. It is crucial that the future of transportation is inclusive, ensuring that all citizens, regardless of income, benefit from these improvements.";
+
+        $questions = [
+            [
+                "stem" => "What is the primary focus of the passage?",
+                "choices" => [
+                    "The history of cars in the 20th century.",
+                    "The decline of public transportation systems.",
+                    "The transformation and future of urban transportation.",
+                    "The benefits of living in rural areas."
+                ],
+                "answer_index" => 2
+            ],
+            [
+                "stem" => "Why are governments encouraging electric vehicles?",
+                "choices" => [
+                    "To increase noise pollution.",
+                    "To reduce air pollution and noise.",
+                    "To make cars more expensive.",
+                    "To use more fossil fuels."
+                ],
+                "answer_index" => 1
+            ],
+            [
+                "stem" => "What is 'Mobility as a Service' (MaaS)?",
+                "choices" => [
+                    "A service that sells luxury cars.",
+                    "A platform integrating various transport modes into one interface.",
+                    "A new type of high-speed train.",
+                    "A law banning cars in cities."
+                ],
+                "answer_index" => 1
+            ],
+            [
+                "stem" => "How are urban planners promoting 'active travel'?",
+                "choices" => [
+                    "By removing sidewalks.",
+                    "By building more parking lots.",
+                    "By creating dedicated lanes for cyclists and pedestrians.",
+                    "By increasing speed limits for cars."
+                ],
+                "answer_index" => 2
+            ],
+            [
+                "stem" => "What remains a challenge mentioned in the conclusion?",
+                "choices" => [
+                    "The lack of technology.",
+                    "The disinterest of the public.",
+                    "Infrastructure costs and equitable access.",
+                    "The slowness of electric cars."
+                ],
+                "answer_index" => 2
+            ]
+        ];
+
+        // Ensure we meet the requested count
+        while (count($questions) < $count) {
+            $base = $questions[count($questions) % 5];
+            $questions[] = [
+                "stem" => $base["stem"] . " (Variant " . (count($questions) + 1) . ")",
+                "choices" => $base["choices"],
+                "answer_index" => $base["answer_index"]
+            ];
+        }
+
+        return [
+            "passage" => $passage,
+            "questions" => array_slice($questions, 0, $count),
+            "source" => "fallback"
+        ];
+    }
+
+    // Generic fallback for other skills
     $q = [];
     for ($i = 1; $i <= $count; $i++) {
         $q[] = [
-            "stem" => "Mock Question {$i} for {$skill} ({$cefr})",
-            "choices" => ["Option A", "Option B", "Option C", "Option D"],
+            "stem" => "Sample Question {$i} for {$skill} ({$cefr})",
+            "choices" => ["Correct Choice", "Incorrect Choice A", "Incorrect Choice B", "Incorrect Choice C"],
             "answer_index" => 0
         ];
     }
 
-    $data = [
+    return [
         "questions" => $q,
         "source" => "fallback"
     ];
-
-    if (strtolower($skill) === 'reading') {
-        $data['passage'] = "This is a placeholder reading passage because the AI could not be reached. \n\nLearning a language requires consistent practice. Reading daily helps expand vocabulary and understanding of grammar structures. In this mock test, you can practice answering questions even without a generated text, or try refreshing the page to connect to the AI again.";
-    }
-
-    return $data;
 }
 
 function getFallbackData()
