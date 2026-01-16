@@ -56,12 +56,18 @@ function getUserProfile()
     global $pdo;
     $userId = current_user_id();
 
-    $stmt = $pdo->prepare("SELECT name, email, cefr_level, ielts_estimate, toefl_estimate FROM users WHERE id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    try {
+        $stmt = $pdo->prepare("SELECT name, email, cefr_level, ielts_estimate, toefl_estimate FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        // If column missing or DB error, ignore and fall through to fallback
+        $user = false;
+        error_log("DB Profile Fetch Error: " . $e->getMessage());
+    }
 
     if (!$user) {
-        // Fallback mainly for dev environment if user not found
+        // Fallback mainly for dev environment if user not found or DB schema mismatch
         return [
             "name" => "Guest",
             "current_level" => "Not Determined",
@@ -74,7 +80,7 @@ function getUserProfile()
     }
 
     return [
-        "name" => $user['name'],
+        "name" => $user['name'] ?? "User",
         "current_level" => $user['cefr_level'] ?? "Not Determined",
         "target_level" => "C1", // Hardcoded for now or add column
         "ielts_estimate" => floatval($user['ielts_estimate'] ?? 0),
