@@ -66,7 +66,7 @@ function nice_status($s) {
 
 
 <div style="border:1px solid #e5e5e5;border-radius:12px;padding:14px;margin:16px 0;">
-  <h3 style="margin:0 0 10px 0;">Assignments</h3>
+  <h3 style="margin:0 0 10px 0;" style=" color: #e692beff;">Assignments</h3>
 
   <?php if (empty($pendingAssignments)): ?>
     <p style="margin:0;opacity:.85;">Şu an bekleyen ödevin yok 🎉</p>

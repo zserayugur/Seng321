@@ -33,6 +33,7 @@ $rows = $stmt->fetchAll();
 
 <p>Welcome, <b><?= h($_SESSION["user"]["name"] ?? "Instructor") ?></b> (INSTRUCTOR)</p>
 
+<li><a href="<?php echo $base; ?>/instructor/class_codes.php">Class Codes</a></li>
 
 
 <hr style="margin:18px 0;">
