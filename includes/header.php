@@ -45,7 +45,7 @@ if ($role === "admin") {
 <body>
   <div class="container">
     <header class="main-header">
-      <a href="home.php">
+      <a href="<?php echo $path_prefix; ?>pages/home.php">
         <img 
             src="/Seng321/assets/logo2.png" 
             alt="LevelUP English"
