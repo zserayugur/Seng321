@@ -3,48 +3,53 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/auth_guard.php';
 
-function getTestResults(int $limit = 8): array
+function getTestResults(int $limit = 10): array
 {
-    if (session_status() === PHP_SESSION_NONE) session_start();
-    $uid = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : 0;
-    if ($uid <= 0) return [];
+    if (session_status() === PHP_SESSION_NONE)
+        session_start();
+    $uid = isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : 0;
 
-    // PDO
-    $pdo = db(); // sende farklıysa: getPDO() / $GLOBALS['pdo'] vs.
+    // If no user logic, return empty or mock for guest
+    if ($uid <= 0)
+        return [];
 
+    global $pdo; // Ensure $pdo is available
+
+    // Fetch from ai_test_results
     $sql = "
-      SELECT
-        a.category,
-        ar.score_percent,
-        ar.correct_count,
-        ar.wrong_count,
-        ar.cefr_estimate,
-        ar.created_at
-      FROM assessments a
-      JOIN assessment_results ar ON ar.assessment_id = a.id
-      WHERE a.user_id = :uid
-      ORDER BY ar.created_at DESC
+      SELECT id, test_name, test_type, score, max_score, cefr_level, result_json, created_at
+      FROM ai_test_results
+      WHERE user_id = :uid
+      ORDER BY id DESC
       LIMIT :lim
     ";
 
-    $st = $pdo->prepare($sql);
-    $st->bindValue(':uid', $uid, PDO::PARAM_INT);
-    $st->bindValue(':lim', $limit, PDO::PARAM_INT);
-    $st->execute();
+    try {
+        $st = $pdo->prepare($sql);
+        $st->bindValue(':uid', $uid, PDO::PARAM_INT);
+        $st->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $st->execute();
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("DB Fetch Error: " . $e->getMessage());
+        return [];
+    }
 
-    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
-    if (!$rows) return [];
+    if (!$rows)
+        return [];
 
-    // UI/AI coach tarafı için basit normalize
     $out = [];
     foreach ($rows as $r) {
         $out[] = [
-            'category' => $r['category'],
-            'score_percent' => (float)$r['score_percent'],
-            'correct' => (int)$r['correct_count'],
-            'wrong' => (int)$r['wrong_count'],
-            'cefr' => $r['cefr_estimate'],
-            'date' => $r['created_at'],
+            'id' => $r['id'],
+            'test' => $r['test_name'],
+            'type' => $r['test_type'],
+            'score' => (float) $r['score'],
+            'max_score' => (int) $r['max_score'],
+            'level' => $r['cefr_level'],
+            'date' => date("Y-m-d H:i", strtotime($r['created_at'] ?? 'now')), // Format date
+            'status' => 'Completed',
+            'details' => json_decode($r['result_json'] ?? '{}', true)
         ];
     }
     return $out;

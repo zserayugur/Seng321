@@ -2,171 +2,262 @@
 $page = 'listening';
 $path_prefix = '../';
 require_once __DIR__ . '/../includes/auth_guard.php';
-require_once __DIR__ . '/../includes/csrf.php';   // ✅ EKLE
-$assignment_id = (int)($_GET['assignment_id'] ?? 0); // ✅ EKLE
-$csrf = csrf_token(); // ✅ EKLE
+require_once __DIR__ . '/../includes/csrf.php';
+$assignment_id = (int) ($_GET['assignment_id'] ?? 0);
+$csrf = csrf_token();
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
-<h2>Listening Test (Part 1 & 2)</h2>
+<div class="dashboard-grid" style="grid-template-columns: 1fr; max-width: 900px; margin: 0 auto;">
+  <section class="card">
+    <h1>AI Listening Test</h1>
+    <p>Listen to a generated audio script (approx. 3-4 minutes) and answer open-ended comprehension questions. Receive
+      instant AI grading and feedback.</p>
 
-<button id="btnStart1">Start Listening Test 1</button>
-<button id="btnStart2" disabled>Start Listening Test 2</button>
+    <!-- Step 1: Generate -->
+    <div id="controls" style="margin-top: 30px; text-align: center;">
+      <button id="btnGenerate" class="btn-primary" style="padding: 12px 24px;">Generate Long Listening Test</button>
+      <p id="loading" style="display:none; color: #666; margin-top: 15px;">Generating extended listening content (this
+        may take 10-20 seconds)... Please wait...</p>
+    </div>
 
-<div id="preview" style="display:none;">
-  <h3>Preview: <span id="previewTimer">10</span>s</h3>
-</div>
+    <!-- Step 2: Test Area -->
+    <div id="testArea" style="display:none; margin-top: 30px;">
 
-<div id="exam" style="display:none;">
-  <h3>Time left: <span id="timeLeft">10:00</span></h3>
-  <div id="q"></div>
-  <button id="btnSubmit">Submit</button>
-  <p id="status"></p>
-  <pre id="mockBox"></pre>
+      <!-- Audio Player -->
+      <div class="audio-player"
+        style="background: #f3f4f6; padding: 20px; border-radius: 12px; margin-bottom: 25px; display: flex; flex-direction: column; gap: 15px; border: 1px solid #e5e7eb;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <button id="btnPlay" class="btn-primary"
+            style="background: #2563eb; width: 50px; height: 50px; border-radius: 50%; padding: 0; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">▶</button>
+          <span id="audioStatus" style="font-weight: 500; color: #374151;">Click play to listen</span>
+        </div>
+        <!-- Progress -->
+        <div style="width: 100%; height: 6px; background: #d1d5db; border-radius: 3px; overflow: hidden;">
+          <div id="progressBar" style="width: 0%; height: 100%; background: #2563eb; transition: width 0.2s linear;">
+          </div>
+        </div>
+      </div>
+
+      <form id="quizForm" onsubmit="handleQuizSubmit(event)">
+        <div id="questionsContainer"></div>
+
+        <div style="text-align: right; margin-top: 25px;">
+          <button type="submit" id="btnSubmit" class="btn-primary" style="padding: 12px 30px;">Submit Answers</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Step 3: Result -->
+  <section id="resultArea" class="card" style="display:none; margin-top: 20px;">
+    <h2>AI Evaluation Result</h2>
+    <!-- Check JS logic for how this is populated, it handles HTML injection cleanly -->
+    <div id="feedbackText" style="line-height: 1.6;"></div>
+
+    <div style="margin-top: 25px; text-align: center;">
+      <button onclick="location.reload()" class="btn">Take Another Test</button>
+    </div>
+  </section>
 </div>
 
 <script>
-let attemptId=null, part=1;
-let previewLeft=10, secondsLeft=10*60;
-let previewInterval=null, timerInterval=null;
+  let currentScript = "";
+  let currentQuestions = [];
+  let speechUtterance = null;
 
-const questions = (p)=>Array.from({length:10}).map((_,i)=>({idx:i+1,text:`(Part ${p}) Q${i+1}: Write your answer...`}));
+  const btnGenerate = document.getElementById('btnGenerate');
+  const loading = document.getElementById('loading');
+  const controls = document.getElementById('controls');
+  const testArea = document.getElementById('testArea');
+  const questionsContainer = document.getElementById('questionsContainer');
+  const btnPlay = document.getElementById('btnPlay');
+  const audioStatus = document.getElementById('audioStatus');
+  const progressBar = document.getElementById('progressBar');
+  // Re-map resultArea to act as feedback container
+  const resultArea = document.getElementById('resultArea');
+  const feedbackText = document.getElementById('feedbackText');
 
-function formatTime(s){
-  const m=Math.floor(s/60), r=s%60;
-  return String(m).padStart(2,'0')+":"+String(r).padStart(2,'0');
-}
+  // Generate Test
+  btnGenerate.addEventListener('click', async () => {
+    loading.style.display = 'block';
+    controls.querySelector('button').style.display = 'none'; // Hide button only
+    testArea.style.display = 'none';
+    resultArea.style.display = 'none';
 
-function renderQs(){
-  const qs=questions(part);
-  document.getElementById('q').innerHTML = qs.map(q=>`
-    <div style="margin:10px 0; padding:10px; border:1px solid #ddd;">
-      <p><b>${q.idx}.</b> ${q.text}</p>
-      <input data-q="${q.idx}" style="width:100%;" placeholder="Answer..." />
-    </div>
-  `).join('');
-}
+    try {
+      const res = await fetch(`api/get_listening.php`);
+      const textResponse = await res.text();
+      let data;
+      try {
+        data = JSON.parse(textResponse);
+      } catch (err) {
+        throw new Error("Server returned invalid JSON: " + textResponse.substring(0, 50));
+      }
 
-async function startAttempt(p){
-  part=p;
-  const fd=new FormData();
-  fd.append('type','listening');
-  fd.append('part',String(part));
-  const res=await fetch('api/start_attempt.php',{method:'POST',body:fd});
-  const data=await res.json();
-  attemptId=data.attempt_id;
-}
+      if (data.error) {
+        alert(data.error);
+        controls.querySelector('button').style.display = 'inline-block';
+        return;
+      }
 
-function startPreview(){
-  document.getElementById('preview').style.display='block';
-  document.getElementById('exam').style.display='none';
-  previewLeft=10;
-  document.getElementById('previewTimer').textContent=previewLeft;
+      currentScript = data.script;
+      currentQuestions = data.questions;
 
-  previewInterval=setInterval(()=>{
-    previewLeft--;
-    document.getElementById('previewTimer').textContent=previewLeft;
-    if(previewLeft<=0){
-      clearInterval(previewInterval);
-      beginExam();
+      renderQuestions(currentQuestions);
+
+      loading.style.display = 'none';
+      controls.style.display = 'none'; // Hide entire controls area
+      testArea.style.display = 'block';
+
+    } catch (e) {
+      console.error(e);
+      alert("Failed to load test: " + e.message);
+      loading.style.display = 'none';
+      controls.querySelector('button').style.display = 'inline-block';
     }
-  },1000);
-}
+  });
 
-function beginExam(){
-  document.getElementById('preview').style.display='none';
-  document.getElementById('exam').style.display='block';
-  renderQs();
+  // Play Audio (TTS)
+  btnPlay.addEventListener('click', (e) => {
+    e.preventDefault(); // prevent form submit if inside form (it is not, but good practice)
+    if (!currentScript) return;
 
-  secondsLeft=10*60;
-  document.getElementById('timeLeft').textContent=formatTime(secondsLeft);
-
-  timerInterval=setInterval(()=>{
-    secondsLeft--;
-    document.getElementById('timeLeft').textContent=formatTime(secondsLeft);
-    if(secondsLeft<=0){
-      clearInterval(timerInterval);
-      submitListening(true);
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      btnPlay.innerHTML = "▶";
+      audioStatus.textContent = "Stopped.";
+      progressBar.style.transition = 'none';
+      progressBar.style.width = '0%';
+      return;
     }
-  },1000);
-}
 
-async function saveAll(){
-  const inputs=[...document.querySelectorAll('#q input')];
-  for(const inp of inputs){
-    const idx=parseInt(inp.getAttribute('data-q'),10);
-    const fd=new FormData();
-    fd.append('attempt_id',attemptId);
-    fd.append('question_index',idx);
-    fd.append('question_text',`LISTENING_PART_${part}_Q${idx}`);
-    fd.append('answer_text',inp.value);
-    await fetch('api/save_progress.php',{method:'POST',body:fd});
+    const utterance = new SpeechSynthesisUtterance(currentScript);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.85;
+
+    utterance.onstart = () => {
+      btnPlay.innerHTML = "⏹"; // Stop icon
+      audioStatus.textContent = "Playing...";
+      progressBar.style.width = '0%';
+      // rough duration calc
+      const estimatedDuration = (currentScript.length / 18);
+      progressBar.style.transition = `width ${estimatedDuration}s linear`;
+      setTimeout(() => progressBar.style.width = '100%', 100);
+    };
+
+    utterance.onend = () => {
+      btnPlay.innerHTML = "▶";
+      audioStatus.textContent = "Finished. You can replay if needed.";
+      progressBar.style.transition = 'none';
+      progressBar.style.width = '100%';
+    };
+
+    window.speechSynthesis.speak(utterance);
+  });
+
+  function renderQuestions(qs) {
+    questionsContainer.innerHTML = qs.map((q, i) => `
+        <div class="question-block" style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #eee;">
+            <p style="font-weight: 600; margin-bottom: 10px; color: #1f2937;">Q${i + 1}: ${q}</p>
+            <textarea name="answer_${i}" rows="2" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-family: sans-serif;" placeholder="Type your answer here..." required></textarea>
+        </div>
+    `).join('');
   }
-}
 
-async function submitListening(isAuto=false){
-  document.getElementById('btnSubmit').disabled=true;
-  document.getElementById('status').textContent=isAuto ? "Auto-submitting..." : "Submitting...";
-  if(timerInterval) clearInterval(timerInterval);
+  // Submit Answers
+  async function handleQuizSubmit(e) {
+    e.preventDefault();
 
-  await saveAll();
+    const btn = document.getElementById('btnSubmit');
+    const form = document.getElementById('quizForm');
 
-  const fd2 = new FormData();
-fd2.append('attempt_id', attemptId);
+    btn.disabled = true;
+    btn.textContent = "Evaluating... (Please wait)";
 
-// 🔥 assignment_id EKLENİYOR (kritik)
-fd2.append('assignment_id', "<?= (int)($_GET['assignment_id'] ?? 0) ?>");
-
-await fetch('api/submit_attempt.php', {
-  method: 'POST',
-  body: fd2
-});
-
-
-  const fd3=new FormData();
-  fd3.append('attempt_id',attemptId);
-  const ev=await fetch('api/evaluate_attempt.php',{method:'POST',body:fd3});
-  const evData=await ev.json();
-
-  document.getElementById('mockBox').textContent=JSON.stringify(evData.evaluation,null,2);
-  document.getElementById('status').textContent="Done.";
-
-    // ✅ Eğer bu sınav assignment üzerinden açıldıysa (assignment_id varsa) completed yap
-  const assignmentId = <?= (int)$assignment_id ?>;
-  const csrfToken = "<?= htmlspecialchars($csrf, ENT_QUOTES) ?>";
-
-  if (assignmentId > 0 && part === 2) {
-    const fdDone = new FormData();
-    fdDone.append('csrf_token', csrfToken);
-    fdDone.append('assignment_id', String(assignmentId));
-
-    await fetch('/Seng321/assignments/complete.php', {
-      method: 'POST',
-      body: fdDone
+    const formData = new FormData(form);
+    const answers = [];
+    currentQuestions.forEach((_, i) => {
+      answers.push(formData.get(`answer_${i}`));
     });
 
-    // completed olduktan sonra assignments sayfasına dön
-    window.location.href = '/Seng321/dashboard/student_assignments.php';
-    return;
+    try {
+      const res = await fetch('api/evaluate_listening.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          script: currentScript,
+          questions: currentQuestions,
+          answers: answers
+        }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const textRes = await res.text();
+      let data;
+      try {
+        data = JSON.parse(textRes);
+      } catch (jsonErr) {
+        console.error("Invalid JSON:", textRes);
+        throw new Error("Server Error: " + textRes.substring(0, 100));
+      }
+
+      if (data.feedback) {
+        let html = "";
+        const fb = data.feedback;
+
+        if (typeof fb === 'string') {
+          html = `<p>${fb}</p>`;
+        } else {
+          // Check for structured report
+          if (fb.report_title) html += `<h3 style="color:#111827; margin-bottom:15px;">${fb.report_title}</h3>`;
+
+          if (fb.student_performance) {
+            const p = fb.student_performance;
+            html += `
+            <div style="background:#f0fdf4; padding:20px; margin-bottom:20px; border-radius:8px; border:1px solid #bbf7d0;">
+                <div style="font-size:2rem; font-weight:800; color:#166534; margin-bottom:5px;">${p.score}/${p.max_score}</div>
+                <div style="color:#15803d; font-style:italic;">${p.overall_feedback}</div>
+            </div>`;
+          }
+
+          if (fb.question_analysis && Array.isArray(fb.question_analysis)) {
+            html += "<h4 style='margin-bottom:15px; border-bottom:2px solid #e5e7eb; padding-bottom:10px;'>Detailed Analysis</h4>";
+            fb.question_analysis.forEach(q => {
+              html += `
+              <div style="margin-bottom:20px; padding:15px; background:#f9fafb; border-radius:8px;">
+                  <strong style="display:block; margin-bottom:5px; color:#111827;">Q${q.question_number}: ${q.question}</strong>
+                  <div style="margin-bottom:5px; color:#4b5563;">Your Answer: <span style="font-style:italic;">${q.student_answer}</span></div>
+                  <div style="color:#059669; font-weight:500;">Feedback: ${q.feedback} <span style="font-size:0.9em; opacity:0.8;">(${q.score_awarded} pts)</span></div>
+              </div>`;
+            });
+          }
+
+          // Fallback
+          if (html === "") html = "<pre>" + JSON.stringify(fb, null, 2) + "</pre>";
+        }
+
+        feedbackText.innerHTML = html;
+
+        testArea.style.display = 'none';
+        resultArea.style.display = 'block';
+        window.speechSynthesis.cancel(); // Stop audio
+
+        resultArea.scrollIntoView({ behavior: 'smooth' });
+
+      } else if (data.error) {
+        alert("Error: " + data.error);
+      } else {
+        alert("Unknown response format.");
+      }
+
+    } catch (e) {
+      console.error(e);
+      alert("Evaluation failed: " + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Submit Answers";
+    }
   }
-
-
-  if(part===1) document.getElementById('btnStart2').disabled=false;
-}
-
-//buranın üstünü yoruma kadar ekledim
-
-document.getElementById('btnStart1').addEventListener('click', async ()=>{
-  await startAttempt(1);
-  document.getElementById('btnSubmit').disabled=false;
-  startPreview();
-});
-document.getElementById('btnStart2').addEventListener('click', async ()=>{
-  await startAttempt(2);
-  document.getElementById('btnSubmit').disabled=false;
-  document.getElementById('mockBox').textContent='';
-  startPreview();
-});
-document.getElementById('btnSubmit').addEventListener('click', ()=>submitListening(false));
 </script>
+
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

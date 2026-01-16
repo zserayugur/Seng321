@@ -1,0 +1,47 @@
+{
+  "insight_text": "Consistency is the secret ingredient to fluency. A little bit every day beats a marathon session once a week.",
+  "focus_area": "Advanced Grammar (Conditionals, Inversion, Advanced Modals) and Fluency Practice",
+  "daily_plan": [
+    {
+      "title": "Grammar Deep Dive: Third Conditional & Mixed Conditionals",
+      "duration": "25 min",
+      "priority": "High",
+      "type": "Exercise/Drill"
+    },
+    {
+      "title": "Vocabulary Review: Phrasal Verbs for Debates (e.g., 'weigh up', 'shoot down')",
+      "duration": "15 min",
+      "priority": "Medium",
+      "type": "Flashcards/Quizlet"
+    },
+    {
+      "title": "Listening Practice: TED Talk on a complex topic (e.g., AI ethics)",
+      "duration": "20 min",
+      "priority": "High",
+      "type": "Active Listening (Note-taking)"
+    },
+    {
+      "title": "Speaking Fluency: Describe a challenging decision you made using at least 3 conditional structures.",
+      "duration": "15 min",
+      "priority": "High",
+      "type": "Self-Recording/Shadowing"
+    }
+  ],
+  "resources": [
+    {
+      "title": "English Grammar in Use (Intermediate/Advanced)",
+      "description": "Focus on Units covering Conditionals (Units 40-43) and Inversion (Units 100+).",
+      "type": "Textbook/Workbook"
+    },
+    {
+      "title": "BBC Learning English: 6 Minute English",
+      "description": "Select recent episodes focusing on nuanced discussions and complex vocabulary.",
+      "type": "Podcast/Audio"
+    },
+    {
+      "title": "Online Grammar Checker (e.g., Grammarly Premium trial or similar)",
+      "description": "Use it specifically to check written exercises for complex sentence structures.",
+      "type": "Tool/Software"
+    }
+  ]
+}
