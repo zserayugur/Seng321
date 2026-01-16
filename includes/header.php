@@ -45,10 +45,12 @@ if ($role === "admin") {
 <body>
   <div class="container">
     <header class="main-header">
-     <img 
-  src="/Seng321/assets/logo2.png" 
-  alt="LevelUP English"
-  style="height: 120px; width: 150px;">
+      <a href="home.php">
+        <img 
+            src="/Seng321/assets/logo2.png" 
+            alt="LevelUP English"
+            style="height: 120px; width: 130px;">
+    </a>
 
       <nav>
         <ul class="nav-links">
